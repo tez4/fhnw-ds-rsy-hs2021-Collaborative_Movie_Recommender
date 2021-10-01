@@ -56,9 +56,60 @@ mean(rowMeans(MovieLense))
 head(MovieLenseMeta)
 
 ## available user meta information
-head(MovieLenseUser)
+head(MovieLenseUser["id"])
 
 ```
+
+```{r}
+head(MovieLense[1:2,1:10])
+```
+
+```{r}
+movies <- as(MovieLense, "data.frame")
+```
+
+```{r}
+movies_wider <- pivot_wider(
+  df,
+  id_cols = user,
+  names_from = item,
+  values_from = rating,
+  values_fill = NULL,
+)
+```
+
+```{r}
+head(movies)
+```
+
+```{r}
+head(movies_wider)
+```
+
+```{r}
+df_1 <- movies %>% group_by(item) %>%  summarize(mean_rating = mean(rating)) %>% sample_n(15) %>% arrange(desc(mean_rating))
+
+ggplot(df_1, aes(y = reorder(item, +mean_rating), x = mean_rating)) +
+  geom_col(alpha = 1, fill = 'steelblue') +
+  scale_y_discrete(expand = c(0,0)) +
+  scale_x_continuous(expand = c(0,0)) +
+  geom_text(aes(label=round(mean_rating,2)), hjust = 1.3, color = 'white') +
+  labs(
+    title = "Average movie ratings",
+    subtitle = "Random Sample of 15 Movies",
+    y = element_blank(),
+    x = "Average Rating (stars)"
+  ) +
+  theme_classic() +
+  theme(axis.text.x = element_blank(),
+        axis.ticks.x = element_blank(),
+        axis.line.x = element_blank(),
+        text = element_text(size = 12) # text size
+  )
+
+        
+```
+
 
 
 Add a new chunk by clicking the *Insert Chunk* button on the toolbar or by pressing *Ctrl+Alt+I*.

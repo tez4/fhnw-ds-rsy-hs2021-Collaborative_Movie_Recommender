@@ -59,19 +59,8 @@ head(MovieLenseUser["id"])
 ```
 
 ```{r}
-head(MovieLense[1:2,1:10])
-```
-
-```{r}
 movies <- as(MovieLense, "data.frame")
-```
 
-```{r}
-movies
-```
-
-
-```{r}
 movies_wider <- pivot_wider(
   movies,
   id_cols = user,
@@ -118,7 +107,15 @@ ggplot(df_1, aes(y = reorder(item, +mean_rating), x = mean_rating)) +
 
 ###### 3.Wie verteilen sich die mittleren Kundenratings pro Film?
 ```{r}
-df3 <- movies %>% group_by(item) %>%  summarize(mean_rating = mean(rating), ratings = n()) %>% mutate(more_than_50 = ifelse(ratings >= 50, 'b) mehr als 50 Bewertungen', 'a) weniger als 50 Bewertugen'))
+df3 <- movies %>% 
+  group_by(item) %>%  
+  summarize(
+    mean_rating = mean(rating),
+    ratings = n()
+  ) %>% 
+  mutate(
+    more_than_50 = ifelse(ratings >= 50, 'b) mehr als 50 Bewertungen', 'a) weniger als 50 Bewertugen')
+  )
 
 ggplot(df3, aes(x = mean_rating)) +
   geom_density(alpha = 1, fill = 'steelblue') +

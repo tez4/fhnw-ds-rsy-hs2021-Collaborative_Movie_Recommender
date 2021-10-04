@@ -69,8 +69,13 @@ movies <- as(MovieLense, "data.frame")
 ```
 
 ```{r}
+movies
+```
+
+
+```{r}
 movies_wider <- pivot_wider(
-  df,
+  movies,
   id_cols = user,
   names_from = item,
   values_from = rating,

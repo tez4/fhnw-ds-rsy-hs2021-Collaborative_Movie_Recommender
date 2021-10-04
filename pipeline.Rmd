@@ -89,6 +89,9 @@ head(movies)
 head(movies_wider)
 ```
 
+***
+#### Explorative Datenanalyse
+
 ```{r}
 df_1 <- movies %>% group_by(item) %>%  summarize(mean_rating = mean(rating)) %>% sample_n(15) %>% arrange(desc(mean_rating))
 
@@ -112,3 +115,24 @@ ggplot(df_1, aes(y = reorder(item, +mean_rating), x = mean_rating)) +
 
         
 ```
+
+###### 3.Wie verteilen sich die mittleren Kundenratings pro Film?
+```{r}
+df3 <- movies %>% group_by(item) %>%  summarize(mean_rating = mean(rating))
+
+ggplot(df3, aes(x = mean_rating)) +
+  geom_density(alpha = 1, fill = 'steelblue') +
+  scale_y_continuous(expand = c(0,0)) +
+  scale_x_continuous(expand = c(0,0)) +
+  labs(
+    title = "Verteilung mittlere Kundenratings pro Film",
+    subtitle = "N = 1664 Filme",
+    x = "Durchschnittliche Bewertung", 
+    y = "Dichte",
+  ) +
+  theme_classic() +
+  theme(
+    text = element_text(size = 12)
+  )
+```
+

@@ -176,10 +176,10 @@ kunden_sample_long %>% mutate_at(vars(rating), ~ as.integer(round(.x)))
 ggplot(kunden_sample_long, aes(x=user, y = rating)) + 
   geom_violin(width=1) + 
   labs(
-    title = "Verteilung Kunden Raiting für zufällig gewählte Kunden",
+    title = "Verteilung Kundenratings für zufällig gewählte Kunden",
     subtitle = "N = 5 Kunden",
-    x = "Durchschnittliche Bewertung", 
-    y = "Ausprägung Raiting",
+    x = "Kunden ID", 
+    y = "Ausprägung Rating",
   ) +
   theme(
     text = element_text(size = 12),
@@ -188,7 +188,6 @@ ggplot(kunden_sample_long, aes(x=user, y = rating)) +
 
 ```
 
-
-
+Hier sehen wir, dass Kunden ziemlich unterschiedliche Bewertungen abgeben. Beispielsweise haben hier in unserer Stichprobe drei von fünf Kunden nie eine ein Stern Bewertung abgegeben. Weiter sehen wir dass Kunden wie zum Beispiel Kunde 814 nur ganzzahlige Bewertungen abgegeben haben. Deshlab müssen die Bewertungen normiert werden.
 
 

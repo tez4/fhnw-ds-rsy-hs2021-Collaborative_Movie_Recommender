@@ -57,10 +57,21 @@ head(MovieLenseMeta)
 head(MovieLenseUser["id"])
 
 ```
+## alle charakter variabeln faktorisieren
 
 ```{r}
+
 movies <- as(MovieLense, "data.frame")
 
+movies <- movies %>% mutate_if(is.character, as.factor)
+
+head(movies)
+
+```
+
+
+
+```{r}
 movies_wider <- pivot_wider(
   movies,
   id_cols = user,
@@ -68,13 +79,7 @@ movies_wider <- pivot_wider(
   values_from = rating,
   values_fill = NULL,
 )
-```
 
-```{r}
-head(movies)
-```
-
-```{r}
 head(movies_wider)
 ```
 
@@ -92,8 +97,7 @@ ggplot(df_1, aes(y = reorder(item, +mean_rating), x = mean_rating)) +
   labs(
     title = "Average movie ratings",
     subtitle = "Random Sample of 15 Movies",
-    y = element_blank(),
-    x = "Average Rating (stars)"
+    y = element_blank(),    x = "Average Rating (stars)"
   ) +
   theme_classic() +
   theme(axis.text.x = element_blank(),
@@ -150,4 +154,41 @@ ggplot(df3, aes(x = mean_rating, fill = more_than_50)) +
     legend.position = 'bottom'
   )
 ```
+
+```{r}
+
+# kunden auswählen
+set.seed(353)
+kunden_sample <- movies_wider %>% sample_n(5)
+# nach diesen Kunden filtern
+kunden_sample_long <- filter(movies, user %in% kunden_sample$user)
+
+kunden_sample
+kunden_sample_long
+
+
+```
+
+```{r}
+
+kunden_sample_long %>% mutate_at(vars(rating), ~ as.integer(round(.x)))
+
+ggplot(kunden_sample_long, aes(x=user, y = rating)) + 
+  geom_violin(width=1) + 
+  labs(
+    title = "Verteilung Kunden Raiting für zufällig gewählte Kunden",
+    subtitle = "N = 5 Kunden",
+    x = "Durchschnittliche Bewertung", 
+    y = "Ausprägung Raiting",
+  ) +
+  theme(
+    text = element_text(size = 12),
+    legend.position = 'bottom'
+  )
+
+```
+
+
+
+
 

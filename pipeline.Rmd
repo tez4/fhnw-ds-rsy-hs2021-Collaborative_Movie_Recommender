@@ -109,6 +109,68 @@ ggplot(df_1, aes(y = reorder(item, +mean_rating), x = mean_rating)) +
         
 ```
 
+
+###### 2. Wie verteilen sich die Kundenratings gesamthaft und nach Genres?
+```{r}
+movies_genre <- MovieLenseMeta%>%
+  rename(item = title)
+movies_genre$url <- NULL
+movies_genre[movies_genre == 0] <- NA
+a <- which(movies_genre==1,arr.ind=TRUE)
+movies_genre[a] <- names(movies_genre)[a[,"col"]]
+movies_genre <- movies_genre %>%
+  unite("genres", unknown:Western, sep= ",", 
+        remove = TRUE, na.rm = TRUE)
+
+movies_mean <- movies%>%
+  group_by(item)%>%
+  summarise(mean_rating = mean(rating))
+
+df2<-merge(x=movies,y=movies_genre,by="item",all.x=TRUE)%>%
+  mutate(genres = strsplit(as.character(genres), ",")) %>%
+  unnest(genres)
+
+df2_mean<-merge(x=movies_mean,y=movies_genre,by="item",all.x=TRUE)%>%
+  mutate(genres = strsplit(as.character(genres), ",")) %>%
+  unnest(genres)
+
+```
+```{r}
+ggplot(movies, aes(x = rating)) +
+  geom_histogram(alpha = 0.5, bins = 10) +
+  labs(
+    title = "Verteilung Kundenratings gesamthaft",
+    subtitle = "N = 1664 Filme",
+    x = "Kundenbewertungen", 
+    y = "Dichte",
+    fill = element_blank()
+  ) +
+  theme_classic() +
+  theme(
+    text = element_text(size = 12),
+    legend.position = 'bottom'
+  )
+```
+
+```{r}
+ggplot(df2, aes(x = rating, fill = genres)) +
+  geom_histogram(alpha = 1, bins = 10) +
+  facet_wrap(~genres)+
+  labs(
+    title = "Verteilung Kundenratings nach Genres",
+    subtitle = "N = 1664 Filme",
+    x = "Durchschnittliche Bewertung", 
+    y = "Dichte",
+    fill = element_blank()
+  ) +
+  theme_classic() +
+  theme(
+    text = element_text(size = 12),
+    legend.position = 'bottom'
+  )
+```
+Hier ist zu sehen, dass das Genres Drama am meisten bewertet wurde, wobei DOkumentationen am wenigsten bewertungen erhalten haben. Die Bewertungen pro Genres verteilen sich jeweils sehr ähnlich 
+
 ###### 3.Wie verteilen sich die mittleren Kundenratings pro Film?
 ```{r}
 df3 <- movies %>% 

@@ -185,6 +185,6 @@ ggplot(df2, aes(x = rating, fill = genres)) +
   )
 ```
 
-Hier ist zu sehen, dass das Genres Drama am meisten bewertet wurde, wobei DOkumentationen am wenigsten bewertungen erhalten haben. die verteilung der Bewertung  
+Hier ist zu sehen, dass das Genres Drama am meisten bewertet wurde, wobei DOkumentationen am wenigsten bewertungen erhalten haben. Die Bewertungen pro Genres verteilen sich jeweils sehr ähnlich  
 
 

@@ -137,7 +137,7 @@ df2_mean<-merge(x=movies_mean,y=movies_genre,by="item",all.x=TRUE)%>%
 ```
 ```{r}
 ggplot(movies, aes(x = rating)) +
-  geom_histogram(alpha = 0.5, bins = 10) +
+  geom_bar(alpha = 0.5) +
   labs(
     title = "Verteilung Kundenratings gesamthaft",
     subtitle = "N = 1664 Filme",
@@ -169,6 +169,8 @@ ggplot(df2, aes(x = rating, fill = genres)) +
     legend.position = 'bottom'
   )
 ```
+
+
 Hier ist zu sehen, dass das Genres Drama am meisten bewertet wurde, wobei DOkumentationen am wenigsten bewertungen erhalten haben. Die Bewertungen pro Genres verteilen sich jeweils sehr ähnlich 
 
 ###### 3.Wie verteilen sich die mittleren Kundenratings pro Film?
@@ -217,32 +219,58 @@ ggplot(df3, aes(x = mean_rating, fill = more_than_50)) +
   )
 ```
 
+Als nächstes möchten wir ein Sample aus dem Datensatz ziehen und die Verteilung deren Ratings vergleichen.
+
+
 ```{r}
 
-# kunden auswählen
-set.seed(353)
-kunden_sample <- movies_wider %>% sample_n(5)
-# nach diesen Kunden filtern
-kunden_sample_long <- filter(movies, user %in% kunden_sample$user)
+# get rating count per user, add as column for further processing
+counts <- movies %>% group_by(user) %>% count()
+movies <- merge(movies, counts, by="user")
+movies_wider <- merge(movies_wider, counts, by="user")
 
-kunden_sample
-kunden_sample_long
+# avoid users with almost no ratings, use median as threshold
+median_count <- median(counts$n)
+print(median_count)
+
+# get sample
+set.seed(623)
+movies_sample <- movies_wider %>% filter(n > median_count) %>% sample_n(5)
+
+# create long table
+movies_sample_long <- filter(movies, user %in% movies_sample$user)
+
+# drop item names, 
+movies_sample_long <- subset(movies_sample_long, select = -c(item))
+
+movies_sample
+movies_sample_long
 
 
 ```
 
 ```{r}
 
-kunden_sample_long %>% mutate_at(vars(rating), ~ as.integer(round(.x)))
+# Number of raitings per user per raiting value
+movies_sample_long_grouped <- movies_sample_long %>% group_by(user, rating) %>% summarise(rating_dens = length(user) / first(n), user = first(user), n=first(n), rating = first(rating))
+movies_sample_long_grouped
+movies_sample_long
 
-ggplot(kunden_sample_long, aes(x=user, y = rating)) + 
-  geom_violin(width=1) + 
+```
+
+
+
+```{r}
+
+ggplot(movies_sample_long_grouped, aes(x=rating, y=rating_dens, fill=user)) + 
+  geom_col(position=position_dodge()) + 
   labs(
     title = "Verteilung Kundenratings für zufällig gewählte Kunden",
     subtitle = "N = 5 Kunden",
     x = "Kunden ID", 
     y = "Ausprägung Rating",
   ) +
+  theme_classic() + 
   theme(
     text = element_text(size = 12),
     legend.position = 'bottom'
@@ -250,6 +278,8 @@ ggplot(kunden_sample_long, aes(x=user, y = rating)) +
 
 ```
 
-Hier sehen wir, dass Kunden ziemlich unterschiedliche Bewertungen abgeben. Beispielsweise haben hier in unserer Stichprobe drei von fünf Kunden nie eine ein Stern Bewertung abgegeben. Weiter sehen wir dass Kunden wie zum Beispiel Kunde 814 nur ganzzahlige Bewertungen abgegeben haben. Deshlab müssen die Bewertungen normiert werden.
+In dieser Grafik sehen wir, wie sich die Bewertungen der Kunden ausprägen. Auffallend ist generell, dass die Bewertungen 1 und 2 weniger abgegeben wurde als 3 und 4. 
+Bei der Verteilung der ratings sind von User zu User Unterschiede feststellbar. User 24 bewertet beispielsweise viel besser als User 639. Dies könnte bedeuten, dass User 24 nur Filme bewertet oder schaut die er/sie mag, oder grundsätzlich höhere Bewertungen abgibt.
+
 
 

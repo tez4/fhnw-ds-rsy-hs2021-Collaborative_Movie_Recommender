@@ -137,7 +137,9 @@ df2_mean<-merge(x=movies_mean,y=movies_genre,by="item",all.x=TRUE)%>%
 ```
 ```{r}
 ggplot(movies, aes(x = rating)) +
-  geom_bar(alpha = 0.5) +
+  geom_bar(alpha = 1, fill = 'steelblue') +
+  scale_y_continuous(expand = c(0,0)) +
+  scale_x_continuous(expand = c(0,0)) +
   labs(
     title = "Verteilung Kundenratings gesamthaft",
     subtitle = "N = 1664 Filme",
@@ -156,6 +158,8 @@ ggplot(movies, aes(x = rating)) +
 ggplot(df2, aes(x = rating, fill = genres)) +
   geom_histogram(alpha = 1, bins = 10) +
   facet_wrap(~genres)+
+  scale_y_continuous(expand = c(0,0)) +
+  scale_x_continuous(expand = c(0,0)) +
   labs(
     title = "Verteilung Kundenratings nach Genres",
     subtitle = "N = 1664 Filme",
@@ -163,10 +167,9 @@ ggplot(df2, aes(x = rating, fill = genres)) +
     y = "Dichte",
     fill = element_blank()
   ) +
-  theme_classic() +
   theme(
     text = element_text(size = 12),
-    legend.position = 'bottom'
+    legend.position = 'none'
   )
 ```
 
@@ -280,6 +283,14 @@ ggplot(movies_sample_long_grouped, aes(x=rating, y=rating_dens, fill=user)) +
 
 In dieser Grafik sehen wir, wie sich die Bewertungen der Kunden ausprägen. Auffallend ist generell, dass die Bewertungen 1 und 2 weniger abgegeben wurde als 3 und 4. 
 Bei der Verteilung der ratings sind von User zu User Unterschiede feststellbar. User 24 bewertet beispielsweise viel besser als User 639. Dies könnte bedeuten, dass User 24 nur Filme bewertet oder schaut die er/sie mag, oder grundsätzlich höhere Bewertungen abgibt.
+
+
+***
+##### Welchen Einfluss hat die Normierung der Ratings pro Kunde auf deren Verteilung?
+
+```{r}
+
+```
 
 
 

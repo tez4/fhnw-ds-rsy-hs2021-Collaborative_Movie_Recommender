@@ -283,3 +283,29 @@ Bei der Verteilung der ratings sind von User zu User Unterschiede feststellbar. 
 
 
 
+Als nächstes möchten wir die Sparcity der Matrix untersuchen.
+
+```{r}
+
+getRatingMatrix(MovieLense)
+image(MovieLense, main = "Raw Ratings")
+
+r_m <- normalize(MovieLense)
+
+hist(getRatings(r_m), breaks=200)
+
+
+```
+
+```{r}
+
+nratings(MovieLense)
+
+sum(as(MovieLense, "matrix"), is.na=TRUE)
+
+```
+
+
+
+
+

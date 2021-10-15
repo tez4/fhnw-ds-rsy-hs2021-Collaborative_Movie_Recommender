@@ -110,7 +110,7 @@ ggplot(df_1, aes(y = reorder(item, +mean_rating), x = mean_rating)) +
 ```
 
 
-###### 2. Wie verteilen sich die Kundenratings gesamthaft und nach Genres?
+#####1. Welches sind die am häufigsten geschauten Genres / Filme?
 ```{r}
 movies_genre <- MovieLenseMeta%>%
   rename(item = title)
@@ -136,13 +136,70 @@ df2_mean<-merge(x=movies_mean,y=movies_genre,by="item",all.x=TRUE)%>%
 
 ```
 ```{r}
+df1_movies <- df2%>%
+  group_by(item)%>%
+  summarize(count=n())%>%
+  ungroup()%>%
+  arrange(desc(count))
+
+df1_movies <- head(df1_movies, 10)
+df1_movies
+
+df1_movies%>%
+  mutate(item = fct_reorder(item, count))%>%
+  ggplot(aes(x = count, y = item))+
+  geom_col(alpha = 1, fill = 'steelblue')+
+  scale_y_discrete(expand = c(0,0)) +
+  scale_x_continuous(expand = c(0,0)) +
+  geom_text(aes(label=count,2), hjust = 1.3, color = 'white') +
+  labs(
+    title = "Most rated Movies",
+    y = element_blank(),    x = "Count of ratings"
+  ) +
+  theme_classic() +
+  theme(axis.text.x = element_blank(),
+        axis.ticks.x = element_blank(),
+        axis.line.x = element_blank(),
+        text = element_text(size = 12) # text size
+  )
+
+```
+```{r}
+df1_genres <- df2%>%
+  group_by(genres)%>%
+  summarize(count=n())%>%
+  ungroup()%>%
+  arrange(desc(count))
+
+df1_genres%>%
+  mutate(genres = fct_reorder(genres, count))%>%
+  ggplot(aes(x = count, y = genres))+
+  geom_col(alpha = 1, fill = 'steelblue')+
+  scale_y_discrete(expand = c(0,0)) +
+  scale_x_continuous(expand = c(0,0)) +
+  geom_text(aes(label=count,2), hjust = 1.3, color = 'white') +
+  labs(
+    title = "Most rated Genres",
+    y = element_blank(),    x = "Count of ratings"
+  ) +
+  theme_classic() +
+  theme(axis.text.x = element_blank(),
+        axis.ticks.x = element_blank(),
+        axis.line.x = element_blank(),
+        text = element_text(size = 12) # text size
+  )
+```
+
+
+###### 2. Wie verteilen sich die Kundenratings gesamthaft und nach Genres?
+```{r}
 ggplot(movies, aes(x = rating)) +
   geom_bar(alpha = 1, fill = 'steelblue') +
   scale_y_continuous(expand = c(0,0)) +
   scale_x_continuous(expand = c(0,0)) +
   labs(
     title = "Verteilung Kundenratings gesamthaft",
-    subtitle = "N = 1664 Filme",
+    subtitle = paste("N = ", nrow(df2), " Bewertungen"),
     x = "Kundenbewertungen", 
     y = "Dichte",
     fill = element_blank()
@@ -156,13 +213,13 @@ ggplot(movies, aes(x = rating)) +
 
 ```{r}
 ggplot(df2, aes(x = rating, fill = genres)) +
-  geom_histogram(alpha = 1, bins = 10) +
+  geom_bar(alpha = 1, bins = 10) +
   facet_wrap(~genres)+
   scale_y_continuous(expand = c(0,0)) +
   scale_x_continuous(expand = c(0,0)) +
   labs(
     title = "Verteilung Kundenratings nach Genres",
-    subtitle = "N = 1664 Filme",
+    subtitle = paste("N = ", nrow(df2), " Bewertungen"),
     x = "Durchschnittliche Bewertung", 
     y = "Dichte",
     fill = element_blank()
@@ -174,7 +231,7 @@ ggplot(df2, aes(x = rating, fill = genres)) +
 ```
 
 
-Hier ist zu sehen, dass das Genres Drama am meisten bewertet wurde, wobei DOkumentationen am wenigsten bewertungen erhalten haben. Die Bewertungen pro Genres verteilen sich jeweils sehr ähnlich 
+Hier ist zu sehen, dass das Genres Drama am meisten bewertet wurde, wobei Dokumentationen am wenigsten Bewertungen erhalten haben. Die Bewertungen pro Genres verteilen sich jeweils sehr ähnlich 
 
 ###### 3.Wie verteilen sich die mittleren Kundenratings pro Film?
 ```{r}
@@ -199,8 +256,7 @@ ggplot(df3, aes(x = mean_rating)) +
     y = "Dichte",
   ) +
   theme_classic() +
-  theme(
-    text = element_text(size = 12)
+  theme(text = element_text(size = 12)
   )
 ```
 ```{r}

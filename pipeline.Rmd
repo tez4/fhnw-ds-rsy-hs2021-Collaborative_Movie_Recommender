@@ -106,7 +106,7 @@ ggplot(df_1, aes(y = reorder(item, +mean_rating), x = mean_rating)) +
         text = element_text(size = 12) # text size
   )
 
-        
+
 ```
 
 
@@ -302,11 +302,17 @@ getRatingMatrix(MovieLense)
 image(MovieLense, main = "Raw Ratings")
 
 r_m <- normalize(MovieLense)
+getRatingMatrix(r_m)
+image(r_m, main = "Normalized Ratings")
+hist(getRatings(r_m), breaks=100)
 
-hist(getRatings(r_m), breaks=200)
+r_m_z <- normalize(MovieLense, method="Z-score")
+hist(getRatings(r_m_z), breaks=100)
 
 
 ```
+
+Users mit tiefen ID's haben im Schnitt weniger gerated. 
 
 ```{r}
 
@@ -317,6 +323,11 @@ sum(as(MovieLense, "matrix"), is.na=TRUE)
 ```
 
 
+```{r}
+
+ggplot(df2, aes(x=item, y=user, colour=rating)) + geom_point(alpha=0.02) + theme_classic()
+
+```
 
 
 

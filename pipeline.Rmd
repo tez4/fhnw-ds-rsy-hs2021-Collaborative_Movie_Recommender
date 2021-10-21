@@ -353,7 +353,7 @@ image(MovieLenseNorm, main = "Normalized Ratings")
 ##### Welchen Einfluss hat die Normierung der Ratings pro Kunde auf deren Verteilung?
 
 ```{r}
-hist(getRatings(MovieLense), breaks=40)
+hist(getRatings(MovieLense), breaks=15)
 hist(getRatings(MovieLenseNorm), breaks=40)
 ```
 Die Ratings sind nun ungefähr Normalverteilt mit einem Durchschnittsrating von 0 und einer Standardabweichung von 1.
@@ -376,6 +376,33 @@ sum(as(MovieLense, "matrix"), is.na=TRUE)
 ggplot(df2, aes(x=item, y=user, colour=rating)) + geom_point(alpha=1, size = 0.05) + theme_classic()
 
 ```
+***
+##### Datenreduktion
 
+```{r}
+# convert into df
+data <- as(MovieLense, "data.frame")
 
+# get the 400 users with most ratings
+counts <- data %>% group_by(user) %>% count() %>% arrange(desc(n), user) %>% head(400)
+data <- inner_join(counts, data, by="user")
+data <- data %>% select(user, item, rating) %>% ungroup
+data <- as.data.frame(data)
+
+# get the 700 Movies with most ratings
+counts <- data %>% group_by(item) %>% count() %>% arrange(desc(n), item) %>% head(700)
+data <- inner_join(counts, data, by="item")
+data <- data %>% select(user, item, rating) %>% ungroup
+data <- as.data.frame(data)
+
+# convert back into realRatingMatrix
+ratingMatrix <- as(data, "realRatingMatrix")
+```
+
+```{r}
+ratingMatrix
+```
+```{r}
+image(ratingMatrix, main = "Raw Ratings")
+```
 

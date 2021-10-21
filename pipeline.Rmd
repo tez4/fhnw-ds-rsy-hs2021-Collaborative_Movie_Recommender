@@ -341,32 +341,24 @@ In dieser Grafik sehen wir, wie sich die Bewertungen der Kunden ausprägen. Auff
 Bei der Verteilung der ratings sind von User zu User Unterschiede feststellbar. User 24 bewertet beispielsweise viel besser als User 639. Dies könnte bedeuten, dass User 24 nur Filme bewertet oder schaut die er/sie mag, oder grundsätzlich höhere Bewertungen abgibt.
 
 
+Als nächstes möchten wir die Sparcity der Matrix untersuchen.
+
+```{r}
+image(MovieLense, main = "Raw Ratings")
+
+MovieLenseNorm <- normalize(MovieLense, method="Z-score")
+image(MovieLenseNorm, main = "Normalized Ratings")
+```
 ***
 ##### Welchen Einfluss hat die Normierung der Ratings pro Kunde auf deren Verteilung?
 
 ```{r}
-
+hist(getRatings(MovieLense), breaks=40)
+hist(getRatings(MovieLenseNorm), breaks=40)
 ```
+Die Ratings sind nun ungefähr Normalverteilt mit einem Durchschnittsrating von 0 und einer Standardabweichung von 1.
 
 
-
-Als nächstes möchten wir die Sparcity der Matrix untersuchen.
-
-```{r}
-
-getRatingMatrix(MovieLense)
-image(MovieLense, main = "Raw Ratings")
-
-r_m <- normalize(MovieLense)
-getRatingMatrix(r_m)
-image(r_m, main = "Normalized Ratings")
-hist(getRatings(r_m), breaks=100)
-
-r_m_z <- normalize(MovieLense, method="Z-score")
-hist(getRatings(r_m_z), breaks=100)
-
-
-```
 
 Users mit tiefen ID's haben im Schnitt weniger gerated. 
 
@@ -381,7 +373,7 @@ sum(as(MovieLense, "matrix"), is.na=TRUE)
 
 ```{r}
 
-ggplot(df2, aes(x=item, y=user, colour=rating)) + geom_point(alpha=0.02) + theme_classic()
+ggplot(df2, aes(x=item, y=user, colour=rating)) + geom_point(alpha=1, size = 0.05) + theme_classic()
 
 ```
 

@@ -111,8 +111,9 @@ ggplot(df_1, aes(y = reorder(item, +mean_rating), x = mean_rating)) +
 
 ```
 
+***
+#### 1. Welches sind die am häufigsten geschauten Genres / Filme?
 
-#####1. Welches sind die am häufigsten geschauten Genres / Filme?
 ```{r}
 movies_genre <- MovieLenseMeta%>%
   rename(item = title)
@@ -192,8 +193,9 @@ df1_genres%>%
   )
 ```
 
+***
+#### 2. Wie verteilen sich die Kundenratings gesamthaft und nach Genres?
 
-###### 2. Wie verteilen sich die Kundenratings gesamthaft und nach Genres?
 ```{r}
 ggplot(movies, aes(x = rating)) +
   geom_bar(alpha = 1, fill = 'steelblue') +
@@ -235,7 +237,9 @@ ggplot(df2, aes(x = rating, fill = genres)) +
 
 Hier ist zu sehen, dass das Genres Drama am meisten bewertet wurde, wobei Dokumentationen am wenigsten Bewertungen erhalten haben. Die Bewertungen pro Genres verteilen sich jeweils sehr ähnlich 
 
-###### 3.Wie verteilen sich die mittleren Kundenratings pro Film?
+***
+#### 3.Wie verteilen sich die mittleren Kundenratings pro Film?
+
 ```{r}
 df3 <- movies %>% 
   group_by(item) %>%  
@@ -310,8 +314,7 @@ movies_sample_long
 ```
 
 ```{r}
-
-# Number of raitings per user per raiting value
+# Number of ratings per user per rating value
 movies_sample_long_grouped <- movies_sample_long %>% group_by(user, rating) %>% summarise(rating_dens = length(user) / first(n), user = first(user), n=first(n), rating = first(rating))
 movies_sample_long_grouped
 movies_sample_long
@@ -434,6 +437,56 @@ ratingMatrix <- as(data, "realRatingMatrix")
 ```{r}
 ratingMatrix
 ```
+```{r}
+print(paste('Old Matrix (',toString(dim(MovieLense)), ')'))
+print(paste('Non NA Values:', round((nratings(MovieLense) / (dim(MovieLense)[1] * dim(MovieLense)[2])) * 100,2), '%' ))
+print('')
+print(paste('New Matrix (',toString(dim(ratingMatrix)), ')'))
+print(paste('Non NA Values:', round((nratings(ratingMatrix) / (dim(ratingMatrix)[1] * dim(ratingMatrix)[2])) * 100,2), '%'))
+
+
+```
+
+```{r}
+old_matrix <- as(MovieLense, "data.frame") %>% 
+  group_by(item) %>%  
+  summarize(
+    mean_rating = mean(rating),
+    ratings = n()
+  ) %>% 
+  mutate(
+    matrix = 'a) alte Matrix'
+  )
+
+new_matrix <- as(ratingMatrix, "data.frame") %>% 
+  group_by(item) %>%  
+  summarize(
+    mean_rating = mean(rating),
+    ratings = n()
+  ) %>% 
+  mutate(
+    matrix = 'b) neue Matrix'
+  )
+
+comparison <- bind_rows(old_matrix, new_matrix)
+
+ggplot(comparison, aes(x = mean_rating, fill = matrix)) +
+  geom_density(alpha = 0.5) +
+  scale_y_continuous(expand = c(0,0)) +
+  scale_x_continuous(expand = c(0,0)) +
+  labs(
+    title = "Verteilung mittlere Kundenratings pro Film",
+    subtitle = "N = 1664 Filme",
+    x = "Durchschnittliche Bewertung", 
+    y = "Dichte",
+  ) +
+  theme_classic() +
+  theme(
+    text = element_text(size = 12),
+    legend.position = c(.90, .95)
+  )
+```
+
 ```{r}
 image(ratingMatrix, main = "Raw Ratings")
 ```

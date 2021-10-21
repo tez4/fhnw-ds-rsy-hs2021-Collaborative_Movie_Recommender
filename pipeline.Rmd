@@ -1,7 +1,9 @@
 ---
 title: "Collaborative Movie Recommender"
-author: Pascal Berger, Lea Bütler & Joël Grosjean
-output: html_notebook
+author: "Pascal Berger, Lea Bütler & Joël Grosjean"
+output:
+  html_notebook: default
+  pdf_document: default
 ---
 R-Version: **[Default] [32-bit] C:\\Program Files\\R\\R-4.1.0**
 
@@ -278,9 +280,8 @@ ggplot(df3, aes(x = mean_rating, fill = more_than_50)) +
   )
 ```
 
-Als nächstes möchten wir ein Sample aus dem Datensatz ziehen und die Verteilung deren Ratings vergleichen.
 
-
+###### 4.Wie stark streuen die Ratings von individuellen Kunden?
 ```{r}
 
 # get rating count per user, add as column for further processing
@@ -324,9 +325,9 @@ movies_sample_long
 ggplot(movies_sample_long_grouped, aes(x=rating, y=rating_dens, fill=user)) + 
   geom_col(position=position_dodge()) + 
   labs(
-    title = "Verteilung Kundenratings für zufällig gewählte Kunden",
+    title = "Streuung Kundenratings für zufällig gewählte Kunden",
     subtitle = "N = 5 Kunden",
-    x = "Kunden ID", 
+    x = "User rating (1-5)", 
     y = "Ausprägung Rating",
   ) +
   theme_classic() + 
@@ -337,12 +338,60 @@ ggplot(movies_sample_long_grouped, aes(x=rating, y=rating_dens, fill=user)) +
 
 ```
 
-In dieser Grafik sehen wir, wie sich die Bewertungen der Kunden ausprägen. Auffallend ist generell, dass die Bewertungen 1 und 2 weniger abgegeben wurde als 3 und 4. 
-Bei der Verteilung der ratings sind von User zu User Unterschiede feststellbar. User 24 bewertet beispielsweise viel besser als User 639. Dies könnte bedeuten, dass User 24 nur Filme bewertet oder schaut die er/sie mag, oder grundsätzlich höhere Bewertungen abgibt.
+In dieser Grafik sehen wir, wie sich die Bewertungen einzelner Kunden verteilen. Auffallend ist generell, dass die Bewertungen 1 und 2 weniger oft abgegeben wurde als 3 und 4. 
+Bei der Verteilung der ratings sind von User zu User Unterschiede feststellbar. User 24 bewertet beispielsweise viel besser als User 639. Dies könnte bedeuten, dass User 24 nur Filme bewertet oder schaut die er/sie mag, oder grundsätzlich höhere Bewertungen abgibt. Leider sehen wir hier weniger gut, welche Tendenzen die Streuung der Rating aller User aufweisen.
 
 
-Als nächstes möchten wir die Sparcity der Matrix untersuchen.
+```{r}
 
+movies_span <- movies %>% group_by(user) %>% 
+  summarize(mean = mean(rating), min = min(rating), max = max(rating), span = (max(rating) - min(rating)))
+
+movies_span
+  
+```
+
+```{r}
+set.seed(123)
+
+ggplot(sample_n(movies_span, 20), aes(x=user)) +
+  geom_point(colour="black", aes(y=mean), shape=21) +
+  geom_errorbar(aes(ymin=min, ymax=max)) +
+  labs(
+    title = "Spannweite Kundenratings ",
+    subtitle = "N = 20 Kunden",
+    x = "User ID", 
+    y = "Rating Range",
+  )
+
+
+ggplot(movies_span, aes(x=user)) +
+  geom_bar(colour="black", aes(span)) +
+  labs(
+    title = "Spannweite Kundenratings",
+    subtitle = "",
+    x = "Spannweite", 
+    y = "Anzahl User",
+  )
+  
+```
+
+In diesen Grafiken sehen wir detailliertere Informationen über die Spannweite und den Mittelpunkt. In der ersten Übersicht ist die Spannweite und der Mittelpunkt einzelner Kunden dargestellt. Es fällt auf, dass trotz des teilweise relativ hohem Mittelwert alle Ratings von 1-5 abgegeben wurden. Ein rating von 5 wurde sozusagen immer abgegeben, 1 nicht immer.
+In der zweiten Übersicht ist die Spannweite aller Kunden dargestellt. Hier wird sichtbar, dass die meisten Kunden Bewertungen von 1-5 abgegeben haben (Spannweite=4), und nur weinige sehr homogen bewertet haben (Spannweite = 1/2). Eine kleine Spannweite kann hier auch aufgetreten sein, da diese User sehr wenige Bewertungen abgegeben haben.
+
+
+###### 5.Welchen Einfluss hat die Normierung der Ratings pro Kunde auf deren Verteilung?
+```{r}
+hist(getRatings(MovieLense), breaks=15)
+hist(getRatings(MovieLenseNorm), breaks=40)
+```
+Die Ratings sind nun ungefähr Normalverteilt mit einem Durchschnittsrating von 0 und einer Standardabweichung von 1. 
+Erkennbar ist, dass die Verteilung rechtssteil und linksschief ist, also mehrheitlich positive Bewertungen abgegeben wurden. 
+Durch die Normierung der Daten werden die Ratings jedes Users auf dieselbe Verteilung gestaucht, wodurch man die Verteilung aller Daten analysieren kann. Dadurch hat man beispielsweise die Möglichkeit die durchschnittliche Bewertungstendenz herauszufinden. 
+
+
+
+###### 6.Welche strukturellen Charakteristika (z.B. Sparsity) und Auffälligkeiten zeigt die User Item Matrix?
 ```{r}
 image(MovieLense, main = "Raw Ratings")
 
@@ -350,32 +399,15 @@ MovieLenseNorm <- normalize(MovieLense, method="Z-score")
 image(MovieLenseNorm, main = "Normalized Ratings")
 ```
 ***
-##### Welchen Einfluss hat die Normierung der Ratings pro Kunde auf deren Verteilung?
 
-```{r}
-hist(getRatings(MovieLense), breaks=15)
-hist(getRatings(MovieLenseNorm), breaks=40)
-```
-Die Ratings sind nun ungefähr Normalverteilt mit einem Durchschnittsrating von 0 und einer Standardabweichung von 1.
+Users mit tiefen ID's und Filme mit hohen ID's weisen weniger ratings auf. Filme mit tiefer ID jedoch sehr viele.
+Auffallend ist, dass es einige wenige User gibt, die fast alle Filme bewertet haben (erkennbar durch die horizontalen scharzen Striche). Dies scheinen sehr aktive Bewerter zu sein.
+Viele Users haben jedoch nur einen kleinen Teil der Filme bewertet.
+Bei den Filmen ist eine ähnliche Tendenz wahrzunehmen, jedoch sind die vertikalen Striche breiter. Möglicherweise sind dort einige beliebte Filme zusammengefasst.
 
 
 
-Users mit tiefen ID's haben im Schnitt weniger gerated. 
 
-```{r}
-
-nratings(MovieLense)
-
-sum(as(MovieLense, "matrix"), is.na=TRUE)
-
-```
-
-
-```{r}
-
-ggplot(df2, aes(x=item, y=user, colour=rating)) + geom_point(alpha=1, size = 0.05) + theme_classic()
-
-```
 ***
 ##### Datenreduktion
 
@@ -406,3 +438,23 @@ ratingMatrix
 image(ratingMatrix, main = "Raw Ratings")
 ```
 
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+###### SPielwiese
+```{r}
+
+ggplot(df2, aes(x=item, y=user, colour=rating)) + geom_point(alpha=1, size = 0.05) + theme_classic()
+
+```

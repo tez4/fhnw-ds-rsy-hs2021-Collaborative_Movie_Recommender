@@ -124,19 +124,20 @@ movies_genre[a] <- names(movies_genre)[a[,"col"]]
 movies_genre <- movies_genre %>%
   unite("genres", unknown:Western, sep= ",", 
         remove = TRUE, na.rm = TRUE)
+movies_genre
 
 movies_mean <- movies%>%
   group_by(item)%>%
   summarise(mean_rating = mean(rating))
 
-df2<-merge(x=movies,y=movies_genre,by="item",all.x=TRUE)%>%
+df2_movies<-merge(x=movies,y=movies_genre,by="item",all.x=TRUE)%>%
   mutate(genres = strsplit(as.character(genres), ",")) %>%
   unnest(genres)
 
 df2_mean<-merge(x=movies_mean,y=movies_genre,by="item",all.x=TRUE)%>%
   mutate(genres = strsplit(as.character(genres), ",")) %>%
   unnest(genres)
-
+df2_movies
 ```
 ```{r}
 df1_movies <- df2%>%
@@ -165,8 +166,9 @@ df1_movies%>%
         axis.line.x = element_blank(),
         text = element_text(size = 12) # text size
   )
-
 ```
+Da in unserem datensatz nur die Anzahl Rarings von Filmen gegeben ist, gehen wir davon aus, dass die meist bewerteten Filme auch die am häufigsten geschauten filme sind. in der Grafik sieht man die 10 meist bewerteten Filme, wobei die ersten drei Plätze von Star Wars Filmen besetzt sind.
+
 ```{r}
 df1_genres <- df2%>%
   group_by(genres)%>%
@@ -192,8 +194,8 @@ df1_genres%>%
         text = element_text(size = 12) # text size
   )
 ```
+Auch hier wirs savon ausgegangen, dass die am meisten bewerteten Genres such die am häufigst geschauten Genres sind. In der Grafik ist zu sehen, dass Drama das top Genres ist, gefolgt von Comedy und Action.
 
-***
 #### 2. Wie verteilen sich die Kundenratings gesamthaft und nach Genres?
 
 ```{r}
@@ -214,6 +216,7 @@ ggplot(movies, aes(x = rating)) +
     legend.position = 'bottom'
   )
 ```
+In dieser Grafik ist die Verteilung der bewertungen zu sehen. Die Bewertungen 4 und 5 wirden klar am häufigsten vergeben, wobei 1 und 2 eher selten bewertet werden.
 
 ```{r}
 ggplot(df2, aes(x = rating, fill = genres)) +
@@ -235,7 +238,7 @@ ggplot(df2, aes(x = rating, fill = genres)) +
 ```
 
 
-Hier ist zu sehen, dass das Genres Drama am meisten bewertet wurde, wobei Dokumentationen am wenigsten Bewertungen erhalten haben. Die Bewertungen pro Genres verteilen sich jeweils sehr ähnlich 
+Hier ist zu sehen, dass das Genres Drama am meisten bewertet wurde, wobei Dokumentationen am wenigsten Bewertungen erhalten haben. Die Bewertungen pro Genres verteilen sich jeweils sehr ähnlich. Die Verteilungen der einzelnen Genres sind ebenfalls ähnlich verteilt wie die bewertungen gesamthaft.
 
 ***
 #### 3.Wie verteilen sich die mittleren Kundenratings pro Film?
@@ -265,6 +268,8 @@ ggplot(df3, aes(x = mean_rating)) +
   theme(text = element_text(size = 12)
   )
 ```
+In dieser Grafik ist die durchschnittliche Bewertung pro Film zu sehen, wobei auch hier zu sehen ist ,dass die die meisten Filme eine Durchschnittliche Bewertung von ca. 4 haben  
+
 ```{r}
 ggplot(df3, aes(x = mean_rating, fill = more_than_50)) +
   geom_density(alpha = 0.5) +
@@ -283,7 +288,7 @@ ggplot(df3, aes(x = mean_rating, fill = more_than_50)) +
     legend.position = 'bottom'
   )
 ```
-
+Für diese Grafik wurden die Filme in zwei gruppen unterteilt: Filme die weniger als 50 bewertungen erhalten haben, und Filme welche mehr als 50 Bewertungen erhalten haben. In der Grafik ist imernoch die durchschnittliche Bewertung dieser Filme zu sehen wobei deutlich erkannt werden kann, dass filme welche weniger bewertungen erhalten haben, tendenziell auch schlechter bewertet wurden.
 
 ###### 4.Wie stark streuen die Ratings von individuellen Kunden?
 ```{r}
@@ -338,7 +343,8 @@ ggplot(movies_sample_long_grouped, aes(x=rating, y=rating_dens, fill=user)) +
     text = element_text(size = 12),
     legend.position = 'bottom'
   )
-
+rlang::last_error()
+rlang::last_trace()
 ```
 
 In dieser Grafik sehen wir, wie sich die Bewertungen einzelner Kunden verteilen. Auffallend ist generell, dass die Bewertungen 1 und 2 weniger oft abgegeben wurde als 3 und 4. 

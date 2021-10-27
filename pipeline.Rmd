@@ -197,7 +197,6 @@ df1_genres%>%
 Auch hier wirs savon ausgegangen, dass die am meisten bewerteten Genres such die am häufigst geschauten Genres sind. In der Grafik ist zu sehen, dass Drama das top Genres ist, gefolgt von Comedy und Action.
 
 #### 2. Wie verteilen sich die Kundenratings gesamthaft und nach Genres?
-
 ```{r}
 ggplot(movies, aes(x = rating)) +
   geom_bar(alpha = 1, fill = 'steelblue') +
@@ -268,7 +267,7 @@ ggplot(df3, aes(x = mean_rating)) +
   theme(text = element_text(size = 12)
   )
 ```
-In dieser Grafik ist die durchschnittliche Bewertung pro Film zu sehen, wobei auch hier zu sehen ist ,dass die die meisten Filme eine Durchschnittliche Bewertung von ca. 4 haben  
+In dieser Grafik ist die durchschnittliche Bewertung pro Film zu sehen, wobei auch hier zu sehen ist ,dass die die meisten Filme eine Durchschnittliche Bewertung von ca. 3 - 3.5 haben.
 
 ```{r}
 ggplot(df3, aes(x = mean_rating, fill = more_than_50)) +
@@ -343,8 +342,7 @@ ggplot(movies_sample_long_grouped, aes(x=rating, y=rating_dens, fill=user)) +
     text = element_text(size = 12),
     legend.position = 'bottom'
   )
-rlang::last_error()
-rlang::last_trace()
+
 ```
 
 In dieser Grafik sehen wir, wie sich die Bewertungen einzelner Kunden verteilen. Auffallend ist generell, dass die Bewertungen 1 und 2 weniger oft abgegeben wurde als 3 und 4. 
@@ -386,7 +384,7 @@ ggplot(movies_span, aes(x=user)) +
 ```
 
 In diesen Grafiken sehen wir detailliertere Informationen über die Spannweite und den Mittelpunkt. In der ersten Übersicht ist die Spannweite und der Mittelpunkt einzelner Kunden dargestellt. Es fällt auf, dass trotz des teilweise relativ hohem Mittelwert alle Ratings von 1-5 abgegeben wurden. Ein rating von 5 wurde sozusagen immer abgegeben, 1 nicht immer.
-In der zweiten Übersicht ist die Spannweite aller Kunden dargestellt. Hier wird sichtbar, dass die meisten Kunden Bewertungen von 1-5 abgegeben haben (Spannweite=4), und nur weinige sehr homogen bewertet haben (Spannweite = 1/2). Eine kleine Spannweite kann hier auch aufgetreten sein, da diese User sehr wenige Bewertungen abgegeben haben.
+In der zweiten Übersicht ist die Spannweite aller Kunden dargestellt. Hier wird sichtbar, dass die meisten Kunden Bewertungen von 1-5 abgegeben haben (Spannweite=4), und nur weinige sehr homogen bewertet haben (Spannweite = 1-2). Eine kleine Spannweite kann hier auch aufgetreten sein, da diese User sehr wenige Bewertungen abgegeben haben.
 
 
 ###### 5.Welchen Einfluss hat die Normierung der Ratings pro Kunde auf deren Verteilung?
@@ -497,12 +495,54 @@ ggplot(comparison, aes(x = mean_rating, fill = matrix)) +
 image(ratingMatrix, main = "Raw Ratings")
 ```
 
+```{r}
+split
+```
+
+
+```{r}
+#split <- rowCount(ratingMatrix) * 0.75
+train <- ratingMatrix[1:300]
+test <- ratingMatrix[301:400]
+
+train
+test
+```
 
 
 
+```{r}
+
+rec <- Recommender(train, method = "IBCF", param=list(method="Cosine", k=30))
+rec
+
+# predict top 10 movies for 100 users
+pre <- predict(rec, test, n = 10)
+pre
+
+reco_list <- as(pre, "list")
+reco_list[1]
+reco_list[13]
+
+#image(as(pre, "matrix"))
+
+```
+
+```{r}
+
+image(as(rec@model$sim, "realRatingMatrix"))
+#similarity
+
+```
 
 
+```{r}
 
+#image(as(similarity(train, method = "Cosine", which = "items"), "matrix"))
+
+plotSimilarityMatrix(train, y = NULL, clusLabels = NULL, colX = NULL, colY = NULL, myLegend = NULL, fileName = "posteriorSimilarityMatrix", savePNG = FALSE, semiSupervised = FALSE, showObsNames = FALSE, clr = FALSE, clc = FALSE, plotWidth = 500, plotHeight = 450)
+
+```
 
 
 
@@ -517,3 +557,8 @@ image(ratingMatrix, main = "Raw Ratings")
 ggplot(df2, aes(x=item, y=user, colour=rating)) + geom_point(alpha=1, size = 0.05) + theme_classic()
 
 ```
+
+
+
+
+

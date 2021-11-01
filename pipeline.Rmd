@@ -209,6 +209,29 @@ ggplot(movies, aes(x = rating)) +
 In dieser Grafik ist die Verteilung der bewertungen zu sehen. Die Bewertungen 4 und 5 wirden klar am häufigsten vergeben, wobei 1 und 2 eher selten bewertet werden.
 
 ```{r}
+# get rating count per user, add as column for further processing
+counts <- movies %>% group_by(user) %>% count()
+movies <- merge(movies, counts, by="user")
+movies_wider <- merge(movies_wider, counts, by="user")
+
+# avoid users with almost no ratings, use median as threshold
+median_count <- median(counts$n)
+print(median_count)
+
+# get sample
+set.seed(623)
+movies_sample <- movies_wider %>% filter(n > median_count) %>% sample_n(5)
+
+# create long table
+movies_sample_long <- filter(movies, user %in% movies_sample$user)
+
+# drop item names, 
+movies_sample_long <- subset(movies_sample_long, select = -c(item))
+
+movies_sample
+movies_sample_long
+
+
 df2b <- genres%>%
   group_by(genres)
   
@@ -287,33 +310,6 @@ Für diese Grafik wurden die Filme in zwei gruppen unterteilt: Filme die weniger
 
 ***
 ###### 4.Wie stark streuen die Ratings von individuellen Kunden?
-```{r}
-
-# get rating count per user, add as column for further processing
-counts <- movies %>% group_by(user) %>% count()
-movies <- merge(movies, counts, by="user")
-movies_wider <- merge(movies_wider, counts, by="user")
-
-# avoid users with almost no ratings, use median as threshold
-median_count <- median(counts$n)
-print(median_count)
-
-# get sample
-set.seed(623)
-movies_sample <- movies_wider %>% filter(n > median_count) %>% sample_n(5)
-
-# create long table
-movies_sample_long <- filter(movies, user %in% movies_sample$user)
-
-# drop item names, 
-movies_sample_long <- subset(movies_sample_long, select = -c(item))
-
-movies_sample
-movies_sample_long
-
-
-```
-
 ```{r}
 # Number of ratings per user per rating value
 movies_sample_long_grouped <- movies_sample_long %>% group_by(user, rating) %>% summarise(rating_dens = length(user) / first(n), user = first(user), n=first(n), rating = first(rating))

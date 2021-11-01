@@ -10,7 +10,7 @@ R-Version: **[Default] [32-bit] C:\\Program Files\\R\\R-4.1.0**
 *** 
 #### Installieren der Packete
 
-```{r}
+```{r message=FALSE, warning=FALSE}
 packages <- c("tidyverse", "data.table", "lubridate", "ggplot2", "ggthemes", "recommenderlab")
 
 # Noch nicht installierte Pakete installieren

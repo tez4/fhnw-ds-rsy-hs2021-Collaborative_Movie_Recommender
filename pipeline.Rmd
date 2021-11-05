@@ -234,7 +234,7 @@ df3 <- movies %>%
   )
 
 ggplot(df3, aes(x = mean_rating)) +
-  geom_density(alpha = 1, fill = 'steelblue') +
+  geom_density(alpha = 1, fill = 'steelblue', bw = 0.08) +
   scale_y_continuous(expand = c(0,0)) +
   scale_x_continuous(expand = c(0,0)) +
   labs(
@@ -251,7 +251,7 @@ In dieser Grafik ist die durchschnittliche Bewertung pro Film zu sehen, wobei au
 
 ```{r}
 ggplot(df3, aes(x = mean_rating, fill = more_than_50)) +
-  geom_density(alpha = 0.5) +
+  geom_density(alpha = 0.5, bw = 0.08) +
   scale_y_continuous(expand = c(0,0)) +
   scale_x_continuous(expand = c(0,0)) +
   labs(
@@ -423,7 +423,7 @@ new_matrix <- as(ratingMatrix, "data.frame") %>%
 comparison <- bind_rows(old_matrix, new_matrix)
 
 ggplot(comparison, aes(x = mean_rating, fill = matrix)) +
-  geom_density(alpha = 0.5) +
+  geom_density(alpha = 0.5, bw = 0.08) +
   scale_y_continuous(expand = c(0,0)) +
   scale_x_continuous(expand = c(0,0)) +
   labs(
@@ -487,7 +487,7 @@ reco_list[13]
 #image(as(pre, "matrix"))
 
 ```
-
+***
 #### 3.Bestimme die Verteilung der Filme, welche bei IBCF für paarweise Ähnlichkeitsvergleiche verwendet werden
 ```{r}
 model <- getModel(rec)
@@ -496,7 +496,7 @@ colSum <- colSums(model$sim > 0)
 df <- as.data.frame(colSum)
 
 ggplot(df, aes(x = colSum)) +
-  geom_density(alpha = 1, fill = 'steelblue') +
+  geom_density(alpha = 1, fill = 'steelblue', bw = 4) +
   scale_y_continuous(expand = c(0,0)) +
   scale_x_continuous(expand = c(0,0)) +
   labs(
@@ -509,6 +509,12 @@ ggplot(df, aes(x = colSum)) +
   theme(text = element_text(size = 12)
   )
 ```
+
+***
+#### 4.Bestimme die Filme, die am häufigsten in der Cosine-Ähnlichkeitsmatrix 
+auftauchen und analysiere deren Vorkommen und Ratings im reduzierten 
+Datensatz
+
 
 ```{r}
 

@@ -388,13 +388,17 @@ ratingMatrix
 ```
 
 ```{r}
+get_sparsity <- function(ratingMatrix) {
+  round(( 1 - (nratings(ratingMatrix) / (dim(ratingMatrix)[1] * dim(ratingMatrix)[2]))) * 100,2)
+}
+
 print(paste('Old Matrix (',toString(dim(MovieLense)), ')'))
-print(paste('Sparsity:', round(( 1 - (nratings(MovieLense) / (dim(MovieLense)[1] * dim(MovieLense)[2]))) * 100,2), '%' ))
-print(paste('Density:', round((nratings(MovieLense) / (dim(MovieLense)[1] * dim(MovieLense)[2])) * 100,2), '%' ))
+print(paste('Sparsity:', get_sparsity(MovieLense), '%' ))
+print(paste('Density:', 100 - get_sparsity(MovieLense), '%' ))
 print('')
 print(paste('New Matrix (',toString(dim(ratingMatrix)), ')'))
-print(paste('Sparsity:', round(( 1 - (nratings(ratingMatrix) / (dim(ratingMatrix)[1] * dim(ratingMatrix)[2]))) * 100,2), '%'))
-print(paste('Density:', round((nratings(ratingMatrix) / (dim(ratingMatrix)[1] * dim(ratingMatrix)[2])) * 100,2), '%'))
+print(paste('Sparsity:', get_sparsity(ratingMatrix), '%' ))
+print(paste('Density:', 100 - get_sparsity(ratingMatrix), '%' ))
 ```
 
 ```{r}

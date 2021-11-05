@@ -83,7 +83,7 @@ ggplot(df_1, aes(y = reorder(item, +mean_rating), x = mean_rating)) +
 ***
 #### 1. Welches sind die am häufigsten geschauten Genres / Filme?
 ```{r}
-movies_genre <- MovieLenseMeta%>%
+movies_genre <- MovieLenseMeta %>%
   rename(item = title)
 movies_genre$url <- NULL
 movies_genre[movies_genre == 0] <- NA
@@ -472,7 +472,7 @@ dim(test)
 #### 2. Trainiere ein IBCF Modell mit 30 Nachbarn und Cosine Similarity
 ```{r}
 
-rec <- Recommender(train, method = "IBCF", param=list(method="Cosine", k=30))
+rec <- Recommender(train, method = "IBCF", param=list(method="Cosine", k=30, normalize = NULL, na_as_zero = TRUE)) #normalize = 'center'
 rec
 
 # predict top 10 movies for 100 users
@@ -488,21 +488,25 @@ reco_list[13]
 
 ```
 ***
-#### 3.Bestimme die Verteilung der Filme, welche bei IBCF für paarweise Ähnlichkeitsvergleiche verwendet werden
+#### 3. Bestimme die Verteilung der Filme, welche bei IBCF für paarweise Ähnlichkeitsvergleiche verwendet werden
 ```{r}
 model <- getModel(rec)
 colSum <- colSums(model$sim > 0)
 
 df <- as.data.frame(colSum)
 
+# add index column
+df <- cbind(item = rownames(df), df)
+rownames(df) <- 1:nrow(df)
+
 ggplot(df, aes(x = colSum)) +
   geom_density(alpha = 1, fill = 'steelblue', bw = 4) +
   scale_y_continuous(expand = c(0,0)) +
   scale_x_continuous(expand = c(0,0)) +
   labs(
-    title = "Verteilung Anzahl ähnlicher Filme",
+    title = "Verteilung der Anzahl ähnlicher Filme",
     # subtitle = paste("N = ", nrow(df3), " Filme"),
-    x = "Summe der ähnlichen Filme", 
+    x = "Anzahl Filme welche den Film in der Nachbarschaft haben", 
     y = "Häufigkeit"
   ) +
   theme_classic() +
@@ -511,9 +515,29 @@ ggplot(df, aes(x = colSum)) +
 ```
 
 ***
-#### 4.Bestimme die Filme, die am häufigsten in der Cosine-Ähnlichkeitsmatrix 
-auftauchen und analysiere deren Vorkommen und Ratings im reduzierten 
-Datensatz
+#### 4. Bestimme die Filme, die am häufigsten in der Cosine-Ähnlichkeitsmatrix auftauchen und analysiere deren Vorkommen und Ratings im reduzierten Datensatz
+```{r}
+df1 <- df %>% arrange(desc(colSum)) %>% head(10)
+df1
+
+ggplot(df1, aes(x = colSum, y = reorder(item, +colSum)))+
+  geom_col(alpha = 1, fill = 'steelblue')+
+  scale_y_discrete(expand = c(0,0)) +
+  scale_x_continuous(expand = c(0,0)) +
+  geom_text(aes(label=round(colSum,2)), hjust = 1.3, color = 'white') +
+  labs(
+    title = "Häufigste Filme in Cosine-Ähnlichkeitsmatrix",
+    y = element_blank(),
+    x = "Anzahl Filme in deren Nachbarschaft der Film ist"
+  ) +
+  theme_classic() +
+  theme(axis.text.x = element_blank(),
+        axis.ticks.x = element_blank(),
+        axis.line.x = element_blank(),
+        text = element_text(size = 12) # text size
+  )
+```
+
 
 
 ```{r}

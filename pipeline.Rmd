@@ -492,13 +492,34 @@ ggplot(comparison, aes(x = mean_rating, fill = matrix)) +
     title = "Verteilung mittlere Kundenratings pro Film",
     subtitle = "N = 1664 Filme",
     x = "Durchschnittliche Bewertung", 
-    y = "Dichte"
+    y = "Dichte",
+    fill = element_blank()
   ) +
   theme_classic() +
   theme(
     text = element_text(size = 12),
     legend.position = c(.90, .95)
   )
+```
+```{r}
+ratingMatrix
+```
+
+```{r}
+# train-test split 
+set.seed(42)
+data <- as(ratingMatrix, "data.frame")
+df <- data %>% group_by(user) %>% summarize(mean_rating = mean(rating))
+
+df <- sample_frac(df, size = 0.8, replace = FALSE)
+df_train <- semi_join(data,df,by='user')
+df_test <- anti_join(data,df_train,by='user')
+train <- as(df_train, "realRatingMatrix")
+test <- as(df_test, 'realRatingMatrix')
+
+dim(train)
+dim(test)
+
 ```
 
 ```{r}

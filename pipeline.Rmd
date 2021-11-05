@@ -78,7 +78,6 @@ ggplot(df_1, aes(y = reorder(item, +mean_rating), x = mean_rating)) +
         text = element_text(size = 12) # text size
   )
 
-
 ```
 
 ***
@@ -97,8 +96,6 @@ genres<-merge(x=movies,y=movies_genre,by="item",all.x=TRUE)%>%
   mutate(genres = strsplit(as.character(genres), ",")) %>%
   unnest(genres)
 
-genres
-
 df1a <- movies%>%
   group_by(item)%>%
   summarize(count=n())%>%
@@ -107,12 +104,13 @@ df1a <- movies%>%
 
 df1a <- head(df1a, 10)
 
-df1a%>%
+df1a %>%
   mutate(item = fct_reorder(item, count))%>%
   ggplot(aes(x = count, y = item))+
   geom_col(alpha = 1, fill = 'steelblue')+
   scale_y_discrete(expand = c(0,0)) +
   scale_x_continuous(expand = c(0,0)) +
+  geom_text(aes(label=round(count,2)), hjust = 1.3, color = 'white') +
   labs(
     title = "Meist bewertete Filme",
     y = element_blank(),    x = "Anzahl Bewertungen"
@@ -447,8 +445,8 @@ image(ratingMatrix, main = "Raw Ratings")
 ```
 
 ***
-#### Analyse Ähnlichkeitsmatrix
-##### 1. Zerlege den reduzierten MovieLense Datensatz in ein disjunktes Trainings- und Testdatenset im Verhältnis 4:1
+## Analyse Ähnlichkeitsmatrix
+#### 1. Zerlege den reduzierten MovieLense Datensatz in ein disjunktes Trainings- und Testdatenset im Verhältnis 4:1
 ```{r}
 #split <- rowCount(ratingMatrix) * 0.75
 # train <- ratingMatrix[1:300]
@@ -471,7 +469,7 @@ dim(test)
 ```
 
 ***
-##### 2. Trainiere ein IBCF Modell mit 30 Nachbarn und Cosine Similarity
+#### 2. Trainiere ein IBCF Modell mit 30 Nachbarn und Cosine Similarity
 ```{r}
 
 rec <- Recommender(train, method = "IBCF", param=list(method="Cosine", k=30))
@@ -490,17 +488,26 @@ reco_list[13]
 
 ```
 
-#####3.Bestimme die Verteilung der Filme, welche bei IBCF für paarweise Ähnlichkeitsvergleiche verwendet werden
+#### 3.Bestimme die Verteilung der Filme, welche bei IBCF für paarweise Ähnlichkeitsvergleiche verwendet werden
 ```{r}
 model <- getModel(rec)
-dim(model$sim)
 colSum <- colSums(model$sim > 0)
 
-qplot(colSum) + 
-  stat_bin(binwidth = 1) +
-  ggtitle("Verteilung der  Filme")+
-  xlab("Summe der ähnlichen Filme")+
-  ylab("Häufigkeit")
+df <- as.data.frame(colSum)
+
+ggplot(df, aes(x = colSum)) +
+  geom_density(alpha = 1, fill = 'steelblue') +
+  scale_y_continuous(expand = c(0,0)) +
+  scale_x_continuous(expand = c(0,0)) +
+  labs(
+    title = "Verteilung Anzahl ähnlicher Filme",
+    # subtitle = paste("N = ", nrow(df3), " Filme"),
+    x = "Summe der ähnlichen Filme", 
+    y = "Häufigkeit"
+  ) +
+  theme_classic() +
+  theme(text = element_text(size = 12)
+  )
 ```
 
 ```{r}

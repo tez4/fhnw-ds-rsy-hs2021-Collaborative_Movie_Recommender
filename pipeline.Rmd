@@ -390,9 +390,11 @@ ratingMatrix
 ```{r}
 print(paste('Old Matrix (',toString(dim(MovieLense)), ')'))
 print(paste('Sparsity:', round(( 1 - (nratings(MovieLense) / (dim(MovieLense)[1] * dim(MovieLense)[2]))) * 100,2), '%' ))
+print(paste('Density:', round((nratings(MovieLense) / (dim(MovieLense)[1] * dim(MovieLense)[2])) * 100,2), '%' ))
 print('')
 print(paste('New Matrix (',toString(dim(ratingMatrix)), ')'))
 print(paste('Sparsity:', round(( 1 - (nratings(ratingMatrix) / (dim(ratingMatrix)[1] * dim(ratingMatrix)[2]))) * 100,2), '%'))
+print(paste('Density:', round((nratings(ratingMatrix) / (dim(ratingMatrix)[1] * dim(ratingMatrix)[2])) * 100,2), '%'))
 ```
 
 ```{r}

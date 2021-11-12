@@ -10,7 +10,7 @@ R-Version: **[Default] [32-bit] C:\\Program Files\\R\\R-4.1.0**
 *** 
 ## Installieren der Packete
 ```{r message=FALSE, warning=FALSE}
-packages <- c("tidyverse", "data.table", "lubridate", "ggplot2", "ggthemes", "recommenderlab")
+packages <- c("tidyverse", "data.table", "lubridate", "ggplot2", "ggthemes", "recommenderlab", "knitr")
 
 # Noch nicht installierte Pakete installieren
 installed_packages <- packages %in% rownames(installed.packages())
@@ -388,17 +388,28 @@ ratingMatrix
 ```
 
 ```{r}
-get_sparsity <- function(ratingMatrix) {
-  round(( 1 - (nratings(ratingMatrix) / (dim(ratingMatrix)[1] * dim(ratingMatrix)[2]))) * 100,2)
+get_sparsity <- function(Matrix) {
+  round(( 1 - (nratings(Matrix) / (dim(Matrix)[1] * dim(Matrix)[2]))) * 100,2)
 }
 
-print(paste('Old Matrix (',toString(dim(MovieLense)), ')'))
-print(paste('Sparsity:', get_sparsity(MovieLense), '%' ))
-print(paste('Density:', 100 - get_sparsity(MovieLense), '%' ))
-print('')
-print(paste('New Matrix (',toString(dim(ratingMatrix)), ')'))
-print(paste('Sparsity:', get_sparsity(ratingMatrix), '%' ))
-print(paste('Density:', 100 - get_sparsity(ratingMatrix), '%' ))
+show_sparsity <- function(Matrix, Name) {
+
+  Measurement <- list('Dimension', 'Sparsity', 'Density')
+  Value <- list(paste('(',toString(dim(Matrix)), ')'),paste(get_sparsity(Matrix), '%' ), paste(100 - get_sparsity(Matrix), '%' ))
+  df <- cbind(Measurement,Value)
+  print(Name)
+  print(df)
+}
+
+show_sparsity_change <- function(oldMatrix, newMatrix) {
+  show_sparsity(oldMatrix, 'Old Matrix')
+  print("")
+  show_sparsity(newMatrix, 'New Matrix')
+}
+
+
+
+show_sparsity_change(MovieLense, ratingMatrix)
 ```
 
 ```{r}

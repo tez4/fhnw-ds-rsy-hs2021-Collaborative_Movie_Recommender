@@ -394,20 +394,17 @@ get_sparsity <- function(Matrix) {
 
 show_sparsity <- function(Matrix, Name) {
 
-  Measurement <- list('Dimension', 'Sparsity', 'Density')
-  Value <- list(paste('(',toString(dim(Matrix)), ')'),paste(get_sparsity(Matrix), '%' ), paste(100 - get_sparsity(Matrix), '%' ))
+  Measurement <- list('Matrix','Dimension', 'Sparsity', 'Density')
+  Value <- list(Name, paste('(',toString(dim(Matrix)), ')'),paste(get_sparsity(Matrix), '%' ), paste(100 - get_sparsity(Matrix), '%' ))
   df <- cbind(Measurement,Value)
-  print(Name)
-  print(df)
+  head(df)
 }
 
 show_sparsity_change <- function(oldMatrix, newMatrix) {
-  show_sparsity(oldMatrix, 'Old Matrix')
-  print("")
-  show_sparsity(newMatrix, 'New Matrix')
+  kable(list(show_sparsity(oldMatrix, 'Old Matrix'), show_sparsity(newMatrix, 'New Matrix')))
+  
+  
 }
-
-
 
 show_sparsity_change(MovieLense, ratingMatrix)
 ```
@@ -519,7 +516,7 @@ ggplot(df, aes(x = colSum)) +
   labs(
     title = "Verteilung der Anzahl ähnlicher Filme",
     # subtitle = paste("N = ", nrow(df3), " Filme"),
-    x = "Anzahl Filme welche den Film in der Nachbarschaft haben", 
+    x = "Häufigkeit zu der der Film als Nachbar auftaucht", 
     y = "Häufigkeit"
   ) +
   theme_classic() +
@@ -560,7 +557,6 @@ data1 <- data %>%
   summarize(mean_rating = mean(rating)) %>%
   arrange(desc(mean_rating)) %>%
   mutate(category = ifelse(item %in% top10, 'Häufigste 10 Filme', 'Restliche Filme'))
-data1
 
 ggplot(data1, aes(x = mean_rating, fill = category)) +
   geom_density(alpha = 0.5, bw = 0.05) +

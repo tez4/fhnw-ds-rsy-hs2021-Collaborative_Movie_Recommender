@@ -580,6 +580,9 @@ ggplot(data1, aes(x = mean_rating, fill = category)) +
 ```{r}
 show_precision <- function(listOfDifferentN, ratingMatrix, threshold) {
   
+  # normalize the rating matrix
+  ratingMatrix <- normalize(ratingMatrix, method="Z-score", row=TRUE)
+  
   # create a training set and a test set with true positives for recall and precision
   data <- as(ratingMatrix, "data.frame")
   relevant <- data %>% group_by(user) %>% sample_n(30)
@@ -591,7 +594,7 @@ show_precision <- function(listOfDifferentN, ratingMatrix, threshold) {
   train <- as(train, 'realRatingMatrix')
   
   # train model based on training set
-  rec <- Recommender(train, method = "IBCF", param=list(method="Cosine", k=30, normalize = NULL, na_as_zero = TRUE)) #normalize = 'center'
+  rec <- Recommender(train, method = "IBCF", param=list(method="Cosine", k=30, normalize = NULL, na_as_zero = TRUE)) #normalize = 'center', 'Z-score'
   
   for (N in listOfDifferentN) {
 
@@ -620,7 +623,7 @@ show_precision <- function(listOfDifferentN, ratingMatrix, threshold) {
   }
 }
 
-show_precision(c(5,10,15,20,25,30), ratingMatrix, 4)
+show_precision(c(5,10,15,20,25,30), ratingMatrix, 0)
 ```
 
 

@@ -575,6 +575,39 @@ ggplot(data1, aes(x = mean_rating, fill = category)) +
   )
 ```
 
+***
+#### Implementierung Top-N Metriken
+```{r}
+# create a training set and a test set with true positives for recall and precision
+data <- as(ratingMatrix, "data.frame")
+true_positives <- data %>% group_by(user) %>% sample_n(30)
+train <- anti_join(data,true_positives,by=c('user','item'))
+train <- as(df_test, 'realRatingMatrix')
+
+```
+
+```{r}
+train
+```
+
+
+```{r}
+data <- as(ratingMatrix, "data.frame")
+df <- data %>% group_by(user) %>% summarize(mean_rating = mean(rating))
+
+
+rec <- Recommender(train, method = "IBCF", param=list(method="Cosine", k=30, normalize = NULL, na_as_zero = TRUE)) #normalize = 'center'
+rec
+
+# predict top 10 movies for 100 users
+pre <- predict(rec, test, n = 10)
+pre
+
+reco_list <- as(pre, "list")
+
+# top 10 recommendations for the 13th user in reco_list
+reco_list[13]
+```
 
 
 

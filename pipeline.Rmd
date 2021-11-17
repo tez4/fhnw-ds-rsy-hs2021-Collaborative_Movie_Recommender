@@ -649,6 +649,129 @@ plotSimilarityMatrix(train, y = NULL, clusLabels = NULL, colX = NULL, colY = NUL
 
 ```
 
+
+
+```{r}
+
+cosine_sim <- function(A, B)
+{
+  similarity <- A %*% B / (norm(A, type="2") * norm(B, type="2"))
+  return(similarity)
+}
+
+jaccard_sim <- function(A, B)
+{
+  inter = length(intersect(A, B))
+  union = length(A) + length(B) - inter
+  jac = inter / union
+  return (jac)
+}
+
+
+A <- c(5, 3, 2, 1)
+B <- c(1, 2, 3, 4)
+
+cosine_sim(A, B)
+jaccard_sim(A, B)
+#library(lsa)
+#cosine(A, B)
+
+```
+
+```{r}
+similarity <- as.matrix(rec@model$sim)
+dim(similarity)
+```
+
+
+```{r}
+wide_matrix <- as.matrix(subset(movies_wider, select = -c(user)))
+
+# replace nas with 0 (no adjusted cosine similarity)
+wide_matrix[is.na(wide_matrix)] <- 0
+
+# ibcf, because columns are taken here
+# row count
+len <- dim(wide_matrix)[2]
+res <- diag(len)
+
+for(i in 1:len)
+{
+  for(j in 1:len)
+  {
+    if(i < j & i != j)
+    {
+      res[i,j] <- cosine_sim(wide_matrix[,i], wide_matrix[,j])
+      res[j,i] <- res[i,j]
+    }
+  }
+}
+res[1:10, 1:10]
+
+#dim(wide_matrix)
+
+```
+
+
+
+```{r}
+#cosine_sim(wide_matrix[,1], wide_matrix[,2])
+#wide_matrix[2,1]
+#as.matrix(subset(movies_wider, select = -c(user)))[,2]
+
+df_res <- as.data.frame(res)
+df_res
+
+image(as(df_res, "realRatingMatrix"))
+as(df_test, 'realRatingMatrix')
+#ggplot(df_res, aes(x = x_variable, y = y_variable)) + stat_density2d(aes(fill = ..density..), contour = F, geom = 'tile')
+
+```
+
+
+```{r}
+#ggplot(df_res, aes(x=V1, y=V2) ) +
+#  geom_bin2d() +
+#  theme_bw()
+require(lattice)
+levelplot(res)
+```
+
+```{r}
+wide_matrix <- as.matrix(subset(movies_wider, select = -c(user)))
+
+# replace nas with 0 (no adjusted cosine similarity)
+#wide_matrix[is.na(wide_matrix)] <- 0
+
+# ibcf, because columns are taken here
+# row count
+len <- dim(wide_matrix)[2]
+res <- diag(len)
+
+for(i in 1:len)
+{
+  for(j in 1:len)
+  {
+    if(i < j & i != j)
+    {
+      res[i,j] <- jaccard_sim(wide_matrix[,i], wide_matrix[,j])
+      res[j,i] <- res[i,j]
+    }
+  }
+}
+res[1:10, 1:10]
+
+#dim(wide_matrix)
+
+```
+
+```{r}
+levelplot(res)
+```
+
+
+
+
 ###### SPielwiese
 ```{r}
 

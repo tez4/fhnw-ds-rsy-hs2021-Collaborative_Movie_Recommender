@@ -335,7 +335,7 @@ ggplot(movies_span, aes(x=user)) +
   )
   
 ```
-In diesen Grafiken sehen wir detailliertere Informationen über die Spannweite und den Mittelpunkt. In der ersten Übersicht ist die Spannweite und der Mittelpunkt einzelner Kunden dargestellt. Es fällt auf, dass trotz des teilweise relativ hohem Mittelwert alle Ratings von 1-5 abgegeben wurden. Ein rating von 5 wurde sozusagen immer abgegeben, 1 nicht immer.
+0In diesen Grafiken sehen wir detailliertere Informationen über die Spannweite und den Mittelpunkt. In der ersten Übersicht ist die Spannweite und der Mittelpunkt einzelner Kunden dargestellt. Es fällt auf, dass trotz des teilweise relativ hohem Mittelwert alle Ratings von 1-5 abgegeben wurden. Ein rating von 5 wurde sozusagen immer abgegeben, 1 nicht immer.
 In der zweiten Übersicht ist die Spannweite aller Kunden dargestellt. Hier wird sichtbar, dass die meisten Kunden Bewertungen von 1-5 abgegeben haben (Spannweite=4), und nur weinige sehr homogen bewertet haben (Spannweite = 1-2). Eine kleine Spannweite kann hier auch aufgetreten sein, da diese User sehr wenige Bewertungen abgegeben haben.
 
 ***
@@ -574,7 +574,6 @@ ggplot(data1, aes(x = mean_rating, fill = category)) +
     legend.position = c(.14, .93)
   )
 ```
-
 ***
 #### Implementierung Top-N Metriken
 ```{r}
@@ -627,10 +626,34 @@ show_precision(c(5,10,15,20,25,30), ratingMatrix, 0)
 ```
 
 
+```{r}
+rec <- Recommender(train, method = "IBCF", param=list(method="Cosine", k=30, normalize = NULL, na_as_zero = TRUE)) #normalize = 'center', 'Z-score'
 
+show_coverage <- function(listOfDifferentN, recommender) {
+  
+  for (N in listOfDifferentN) {
 
+    # predict top N movies
+    pre <- predict(rec, train, n = N)
+    reco_list <- as(pre, "list")
+    recommendations <- as.data.frame(reco_list)
+    all_recommendations <- list()
+    
+    # find true positives and false positives for all users and add them up
+    for (i in colnames(recommendations)) {
+      all_recommendations <- append(all_recommendations, dplyr::pull(recommendations[i]))
 
+    }
 
+    # print summary
+    print(paste('with N =', N))
+    print(paste0(paste('Coverage over Item-space: ', round(length(unique(all_recommendations)) / dim(train)[2] * 100, digits = 2)),'%'))
+    print('')
+  }
+}
+
+show_coverage(c(5,10,15,20,25,30), rec)
+```
 
 
 ```{r}
@@ -645,7 +668,7 @@ image(as(rec@model$sim, "realRatingMatrix"))
 
 #image(as(similarity(train, method = "Cosine", which = "items"), "matrix"))
 
-plotSimilarityMatrix(train, y = NULL, clusLabels = NULL, colX = NULL, colY = NULL, myLegend = NULL, fileName = "posteriorSimilarityMatrix", savePNG = FALSE, semiSupervised = FALSE, showObsNames = FALSE, clr = FALSE, clc = FALSE, plotWidth = 500, plotHeight = 450)
+# plotSimilarityMatrix(train, y = NULL, clusLabels = NULL, colX = NULL, colY = NULL, myLegend = NULL, fileName = "posteriorSimilarityMatrix", savePNG = FALSE, semiSupervised = FALSE, showObsNames = FALSE, clr = FALSE, clc = FALSE, plotWidth = 500, plotHeight = 450)
 
 ```
 

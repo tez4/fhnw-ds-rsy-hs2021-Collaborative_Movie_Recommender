@@ -632,6 +632,7 @@ rec <- Recommender(train, method = "IBCF", param=list(method="Cosine", k=30, nor
 
 show_coverage <- function(listOfDifferentN, recommender) {
   
+  listOfCoverages <- vector()
   for (N in listOfDifferentN) {
 
     # predict top N movies
@@ -643,17 +644,16 @@ show_coverage <- function(listOfDifferentN, recommender) {
     # find true positives and false positives for all users and add them up
     for (i in colnames(recommendations)) {
       all_recommendations <- append(all_recommendations, dplyr::pull(recommendations[i]))
-
     }
 
-    # print summary
-    print(paste('with N =', N))
-    print(paste0(paste('Coverage over Item-space: ', round(length(unique(all_recommendations)) / dim(train)[2] * 100, digits = 2)),'%'))
-    print('')
+    
+    listOfCoverages <- c(listOfCoverages, round(length(unique(all_recommendations)) / dim(train)[2], digits = 4))
   }
+  return (data.frame(N = listOfDifferentN, coverage = listOfCoverages))
 }
 
-show_coverage(c(5,10,15,20,25,30), rec)
+df_coverage <- show_coverage(c(5,10,15,20,25,30), rec)
+df_coverage
 ```
 Summe aller unterschiedlichen Produkte, welche in den Top-N Listen aller Kund*Innen ingesamt auftauchen dividiert durch die Menge aller Produkte.
 
@@ -691,7 +691,7 @@ show_novelty <- function(listOfDifferentN, recommender) {
     }
     listOfNovelties <- c(listOfNovelties, 0 - mean(total_novelty))
   }
-return (data.frame(N = listOfDifferentN, novelty = listOfNovelties))
+  return (data.frame(N = listOfDifferentN, novelty = listOfNovelties))
 }
 
 df_novelty <- show_novelty(c(5,10,15,20,25,30), rec)

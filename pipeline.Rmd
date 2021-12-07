@@ -660,19 +660,19 @@ Summe aller unterschiedlichen Produkte, welche in den Top-N Listen aller Kund*In
 ***
 #### System-level novelty
 ```{r}
-# create a dataset wit calculated popularity for every movie
-popularity <- as(MovieLense, "data.frame")
-popularity <- popularity %>%
-  group_by(item) %>% 
-  summarize(ratings = n() / dim(MovieLense)[2]) %>% 
-  mutate(ratings = log2(ratings))
-
 # train recommender
 rec <- Recommender(train, method = "IBCF", param=list(method="Cosine", k=30, normalize = NULL, na_as_zero = TRUE))
 
 
 show_novelty <- function(listOfDifferentN, recommender) {
+  # create a dataset wit calculated popularity for every movie
+  popularity <- as(MovieLense, "data.frame")
+  popularity <- popularity %>%
+    group_by(item) %>% 
+    summarize(ratings = n() / dim(MovieLense)[2]) %>% 
+    mutate(ratings = log2(ratings))
   
+  listOfNovelties <- vector()
   for (N in listOfDifferentN) {
     # get top-N-list for a certain N
     pre <- predict(rec, train, n = N)
@@ -689,15 +689,18 @@ show_novelty <- function(listOfDifferentN, recommender) {
       novelty <- mean(as.numeric(reco$ratings))
       total_novelty <- c(total_novelty, novelty)
     }
-    print(N)
-    print( 0 - mean(total_novelty))
-    print('')
+    listOfNovelties <- c(listOfNovelties, 0 - mean(total_novelty))
   }
+return (data.frame(N = listOfDifferentN, novelty = listOfNovelties))
 }
 
-show_novelty(c(5,10,15,20,25,30), rec)
+df_novelty <- show_novelty(c(5,10,15,20,25,30), rec)
+df_novelty
 ```
 Mittel der Shannon Information der Popularität der Produkte in der Top-N Liste gemittelt über alle Kund*Innen. 
+
+
+
 
 ```{r}
 

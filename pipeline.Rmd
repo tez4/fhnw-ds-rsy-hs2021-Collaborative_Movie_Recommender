@@ -625,7 +625,8 @@ show_precision <- function(listOfDifferentN, ratingMatrix, threshold) {
 show_precision(c(5,10,15,20,25,30), ratingMatrix, 0)
 ```
 
-
+***
+#### Catalog coverage
 ```{r}
 rec <- Recommender(train, method = "IBCF", param=list(method="Cosine", k=30, normalize = NULL, na_as_zero = TRUE)) #normalize = 'center', 'Z-score'
 
@@ -654,7 +655,49 @@ show_coverage <- function(listOfDifferentN, recommender) {
 
 show_coverage(c(5,10,15,20,25,30), rec)
 ```
+Summe aller unterschiedlichen Produkte, welche in den Top-N Listen aller Kund*Innen ingesamt auftauchen dividiert durch die Menge aller Produkte.
 
+***
+#### System-level novelty
+```{r}
+# create a dataset wit calculated popularity for every movie
+popularity <- as(MovieLense, "data.frame")
+popularity <- popularity %>%
+  group_by(item) %>% 
+  summarize(ratings = n() / dim(MovieLense)[2]) %>% 
+  mutate(ratings = log2(ratings))
+
+# train recommender
+rec <- Recommender(train, method = "IBCF", param=list(method="Cosine", k=30, normalize = NULL, na_as_zero = TRUE))
+
+
+show_novelty <- function(listOfDifferentN, recommender) {
+  
+  for (N in listOfDifferentN) {
+    # get top-N-list for a certain N
+    pre <- predict(rec, train, n = N)
+    reco_list <- as(pre, "list")
+    recommendations <- as.data.frame(reco_list)
+    
+    
+    total_novelty <- vector()
+    for (i in colnames(recommendations)) {
+      # calculate mean popularity of recommended items for user
+      reco <- recommendations[i]
+      colnames(reco)[1] <- "item"
+      reco <- inner_join(popularity, reco, by = 'item')
+      novelty <- mean(as.numeric(reco$ratings))
+      total_novelty <- c(total_novelty, novelty)
+    }
+    print(N)
+    print( 0 - mean(total_novelty))
+    print('')
+  }
+}
+
+show_novelty(c(5,10,15,20,25,30), rec)
+```
+Mittel der Shannon Information der Popularität der Produkte in der Top-N Liste gemittelt über alle Kund*Innen. 
 
 ```{r}
 

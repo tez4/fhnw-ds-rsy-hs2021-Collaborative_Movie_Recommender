@@ -184,7 +184,7 @@ movies_sample_long <- subset(movies_sample_long, select = -c(item))
 df2b <- genres%>%
   group_by(genres)
   
-movies_sample_long_grouped <- movies_sample_long %>% group_by(user, rating) %>% summarise(rating_dens = length(user) / first(n), n=first(n), rating = first(rating))
+movies_sample_long_grouped <- movies_sample_long %>% group_by(user, rating) %>% summarise(rating_dens = length(user) / first(n), user = first(user), n=first(n), rating = first(rating))
   
 ggplot(genres, aes(x = rating, fill = genres)) +
   geom_bar(alpha = 1) +
@@ -282,14 +282,36 @@ ggplot(movies_sample_long_grouped, aes(x=rating, y = rating_dens, fill=user)) +
   )
 
 ```
+
+```{r}
+movies_sample_long_grouped <- movies %>% group_by(rating) %>% summarise(rating_dens = n())
+
+ggplot(movies_sample_long_grouped, aes(x=rating, y = rating_dens)) + 
+  geom_col(fill = 'steelblue') +
+  scale_y_continuous(expand = c(0,0)) +
+  scale_x_continuous(expand = c(0,0)) +
+  labs(
+    title = "Häufigkeit der Kundenbewertungen",
+    subtitle = "N = 943 Kunden",
+    x = "User Bewertung (1-5)", 
+    y = "Anzahl",
+    fill = element_blank()
+  ) +
+  scale_fill_manual("legend", values = c("cyan3", "cyan4", "darkolivegreen3", "darkolivegreen", "coral4")
+                    )+
+  theme_classic() + 
+  theme(
+    text = element_text(size = 12),
+    legend.position = 'bottom'
+  )
+```
+
 In dieser Grafik sehen wir, wie sich die Bewertungen einzelner Kunden verteilen. Auffallend ist generell, dass die Bewertungen 1 und 2 weniger oft abgegeben wurde als 3 und 4. 
 Bei der Verteilung der ratings sind von User zu User Unterschiede feststellbar. User 24 bewertet beispielsweise viel besser als User 639. Dies könnte bedeuten, dass User 24 nur Filme bewertet oder schaut die er/sie mag, oder grundsätzlich höhere Bewertungen abgibt. Leider sehen wir hier weniger gut, welche Tendenzen die Streuung der Rating aller User aufweisen.
 
 ```{r}
 movies_span <- movies %>% group_by(user) %>% 
   summarize(mean = mean(rating), min = min(rating), max = max(rating), span = (max(rating) - min(rating)))
-
-movies_span
 
 set.seed(123)
 
@@ -333,7 +355,8 @@ In der zweiten Übersicht ist die Spannweite aller Kunden dargestellt. Hier wird
 hist(getRatings(MovieLense), 
      breaks=15,
      main = "Verteilung der Bewertungen")
-#hist(getRatings(MovieLenseNorm), breaks=40)
+
+hist(getRatings(MovieLenseNorm), breaks=15)
 ```
 Die Ratings sind nun ungefähr Normalverteilt mit einem Durchschnittsrating von 0 und einer Standardabweichung von 1. 
 Erkennbar ist, dass die Verteilung rechtssteil und linksschief ist, also mehrheitlich positive Bewertungen abgegeben wurden. 
@@ -360,24 +383,6 @@ ratingMatrix
 ```
 
 ```{r}
-get_sparsity <- function(Matrix) {
-  round(( 1 - (nratings(Matrix) / (dim(Matrix)[1] * dim(Matrix)[2]))) * 100,2)
-}
-
-show_sparsity <- function(Matrix, Name) {
-
-  Measurement <- list('Matrix','Dimension', 'Sparsity', 'Density')
-  Value <- list(Name, paste('(',toString(dim(Matrix)), ')'),paste(get_sparsity(Matrix), '%' ), paste(100 - get_sparsity(Matrix), '%' ))
-  df <- cbind(Measurement,Value)
-  head(df)
-}
-
-show_sparsity_change <- function(oldMatrix, newMatrix) {
-  print(list(show_sparsity(oldMatrix, 'Old Matrix'), show_sparsity(newMatrix, 'New Matrix')))
-  
-  
-}
-
 show_sparsity_change(MovieLense, ratingMatrix)
 ```
 

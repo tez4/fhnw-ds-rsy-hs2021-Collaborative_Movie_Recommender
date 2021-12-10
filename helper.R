@@ -120,3 +120,21 @@ show_precision <- function(listOfDifferentN, ratingMatrix, threshold) {
   }
 }
 
+
+get_sparsity <- function(Matrix) {
+  round(( 1 - (nratings(Matrix) / (dim(Matrix)[1] * dim(Matrix)[2]))) * 100,2)
+}
+
+
+show_sparsity <- function(Matrix, Name) {
+  Measurement <- list('Matrix','Dimension', 'Sparsity', 'Density')
+  Value <- list(Name, paste('(',toString(dim(Matrix)), ')'),paste(get_sparsity(Matrix), '%' ), paste(100 - get_sparsity(Matrix), '%' ))
+  df <- cbind(Measurement,Value)
+  head(df)
+}
+
+
+show_sparsity_change <- function(oldMatrix, newMatrix) {
+  print(list(show_sparsity(oldMatrix, 'Old Matrix'), show_sparsity(newMatrix, 'New Matrix')))
+}
+

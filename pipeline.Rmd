@@ -399,37 +399,28 @@ ratingMatrix
 ```{r}
 show_sparsity_change(MovieLense, ratingMatrix)
 ```
+```{r}
+image(ratingMatrix, main = "Raw Ratings")
+```
+Man sieht sehr klar, dass die matrix nun deutlich weniger sparse ist.
 
 ```{r}
 show_change_of_rating_distribution(MovieLense, ratingMatrix)
-```
-
-```{r}
-image(ratingMatrix, main = "Raw Ratings")
 ```
 
 ***
 ## Analyse Ähnlichkeitsmatrix
 #### 1. Zerlege den reduzierten MovieLense Datensatz in ein disjunktes Trainings- und Testdatenset im Verhältnis 4:1
 ```{r}
-#split <- rowCount(ratingMatrix) * 0.75
-# train <- ratingMatrix[1:300]
-# test <- ratingMatrix[301:400]
+both <- split_dataset(ratingMatrix, 0.8)
+train <- both[[1]]
+test <- both[[2]]
 
-# train-test split 
-set.seed(42)
-data <- as(ratingMatrix, "data.frame")
-df <- data %>% group_by(user) %>% summarize(mean_rating = mean(rating))
-
-df <- sample_frac(df, size = 0.8, replace = FALSE)
-df_train <- semi_join(data,df,by='user')
-df_test <- anti_join(data,df_train,by='user')
-train <- as(df_train, "realRatingMatrix")
-test <- as(df_test, 'realRatingMatrix')
-
+print('Trainingsdatenset:')
 dim(train)
+print('')
+print('Testdatenset:')
 dim(test)
-
 ```
 
 ***

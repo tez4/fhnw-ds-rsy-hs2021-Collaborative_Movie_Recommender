@@ -180,3 +180,18 @@ show_change_of_rating_distribution <- function(oldRatingMatrix, newRatingMatrix)
     )
 }
 
+
+split_dataset <- function(ratingMatrix, trainSize) {
+  # train-test split
+  set.seed(42)
+  data <- as(ratingMatrix, "data.frame")
+  df <- data %>% group_by(user) %>% summarize(mean_rating = mean(rating))
+  
+  df <- sample_frac(df, size = trainSize, replace = FALSE)
+  df_train <- semi_join(data,df,by='user')
+  df_test <- anti_join(data,df_train,by='user')
+  train <- as(df_train, "realRatingMatrix")
+  test <- as(df_test, 'realRatingMatrix')
+  
+  return(list(train, test))
+}

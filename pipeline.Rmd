@@ -522,26 +522,29 @@ show_precision(c(5,10,15,20,25,30), ratingMatrix, 0)
 ```
 
 ***
-#### Catalog coverage
+#### Catalog coverage and System-level novelty
 ```{r}
 rec <- Recommender(train, method = "IBCF", param=list(method="Cosine", k=30, normalize = NULL, na_as_zero = TRUE)) #normalize = 'center', 'Z-score'
 
 df_coverage <- show_coverage(c(5,10,15,20,25,30), rec)
-df_coverage
-```
-Summe aller unterschiedlichen Produkte, welche in den Top-N Listen aller Kund*Innen ingesamt auftauchen dividiert durch die Menge aller Produkte.
-
-***
-#### System-level novelty
-```{r}
-# train recommender
-rec <- Recommender(train, method = "IBCF", param=list(method="Cosine", k=30, normalize = NULL, na_as_zero = TRUE))
-
 df_novelty <- show_novelty(c(5,10,15,20,25,30), rec)
-df_novelty
-```
-Mittel der Shannon Information der Popularität der Produkte in der Top-N Liste gemittelt über alle Kund*Innen. 
 
+df_combined <- inner_join(df_coverage, df_novelty, by = 'N')
+df_combined
+```
+Coverage: Summe aller unterschiedlichen Produkte, welche in den Top-N Listen aller Kund*Innen ingesamt auftauchen dividiert durch die Menge aller Produkte.
+Novelty: Mittel der Shannon Information der Popularität der Produkte in der Top-N Liste gemittelt über alle Kund*Innen. 
+
+```{r}
+ggplot(data=df_combined, aes(x=coverage, y=novelty, group=1)) +
+  geom_line() +
+  labs(
+    title = "Coverage gegenüber Novelty für verschiedene N",
+    y = "Novelty",
+    x = "Coverage"
+  ) +
+  theme(text = element_text(size = 12))
+```
 
 
 

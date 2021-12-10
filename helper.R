@@ -138,3 +138,45 @@ show_sparsity_change <- function(oldMatrix, newMatrix) {
   print(list(show_sparsity(oldMatrix, 'Old Matrix'), show_sparsity(newMatrix, 'New Matrix')))
 }
 
+
+show_change_of_rating_distribution <- function(oldRatingMatrix, newRatingMatrix) {
+  old_matrix <- as(oldRatingMatrix, "data.frame") %>% 
+    group_by(item) %>%  
+    summarize(
+      mean_rating = mean(rating),
+      ratings = n()
+    ) %>% 
+    mutate(
+      matrix = 'a) alte Matrix'
+    )
+  
+  new_matrix <- as(newRatingMatrix, "data.frame") %>% 
+    group_by(item) %>%  
+    summarize(
+      mean_rating = mean(rating),
+      ratings = n()
+    ) %>% 
+    mutate(
+      matrix = 'b) neue Matrix'
+    )
+  
+  comparison <- bind_rows(old_matrix, new_matrix)
+  
+  ggplot(comparison, aes(x = mean_rating, fill = matrix)) +
+    geom_density(alpha = 0.5, bw = 0.08) +
+    scale_y_continuous(expand = c(0,0)) +
+    scale_x_continuous(expand = c(0,0)) +
+    labs(
+      title = "Verteilung mittlere Kundenratings pro Film",
+      subtitle = "N = 1664 Filme",
+      x = "Durchschnittliche Bewertung", 
+      y = "Dichte",
+      fill = element_blank()
+    ) +
+    theme_classic() +
+    theme(
+      text = element_text(size = 12),
+      legend.position = c(.90, .95)
+    )
+}
+

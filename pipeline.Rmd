@@ -356,6 +356,7 @@ hist(getRatings(MovieLense),
      breaks=15,
      main = "Verteilung der Bewertungen")
 
+MovieLenseNorm <- normalize(MovieLense, method="Z-score")
 hist(getRatings(MovieLenseNorm), breaks=15)
 ```
 Die Ratings sind nun ungefähr Normalverteilt mit einem Durchschnittsrating von 0 und einer Standardabweichung von 1. 
@@ -387,44 +388,7 @@ show_sparsity_change(MovieLense, ratingMatrix)
 ```
 
 ```{r}
-old_matrix <- as(MovieLense, "data.frame") %>% 
-  group_by(item) %>%  
-  summarize(
-    mean_rating = mean(rating),
-    ratings = n()
-  ) %>% 
-  mutate(
-    matrix = 'a) alte Matrix'
-  )
-
-new_matrix <- as(ratingMatrix, "data.frame") %>% 
-  group_by(item) %>%  
-  summarize(
-    mean_rating = mean(rating),
-    ratings = n()
-  ) %>% 
-  mutate(
-    matrix = 'b) neue Matrix'
-  )
-
-comparison <- bind_rows(old_matrix, new_matrix)
-
-ggplot(comparison, aes(x = mean_rating, fill = matrix)) +
-  geom_density(alpha = 0.5, bw = 0.08) +
-  scale_y_continuous(expand = c(0,0)) +
-  scale_x_continuous(expand = c(0,0)) +
-  labs(
-    title = "Verteilung mittlere Kundenratings pro Film",
-    subtitle = "N = 1664 Filme",
-    x = "Durchschnittliche Bewertung", 
-    y = "Dichte",
-    fill = element_blank()
-  ) +
-  theme_classic() +
-  theme(
-    text = element_text(size = 12),
-    legend.position = c(.90, .95)
-  )
+show_change_of_rating_distribution(MovieLense, ratingMatrix)
 ```
 
 ```{r}

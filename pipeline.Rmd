@@ -9,7 +9,7 @@ R-Version: **[Default] [32-bit] C:\\Program Files\\R\\R-4.1.0**
 
 ```{r echo=FALSE, cache=FALSE, results=FALSE, comment=FALSE, warning=FALSE}
 # nötige Packete
-packages <- c("tidyverse", "data.table", "lubridate", "ggplot2", "ggthemes", "recommenderlab", "knitr")
+packages <- c("tidyverse", "data.table", "lubridate", "ggplot2", "ggthemes", "recommenderlab", "knitr", 'pals', 'RColorBrewer')
 
 # Noch nicht installierte Pakete installieren
 installed_packages <- packages %in% rownames(installed.packages())
@@ -461,7 +461,7 @@ ggplot(df, aes(x = colSum)) +
   labs(
     title = "Verteilung der Anzahl ähnlicher Filme",
     # subtitle = paste("N = ", nrow(df3), " Filme"),
-    x = "Häufigkeit zu der der Film als Nachbar auftaucht", 
+    x = "Anzahl Filme bei denen der Film als Nachbar auftaucht", 
     y = "Häufigkeit"
   ) +
   theme_classic() +
@@ -519,6 +519,8 @@ ggplot(data1, aes(x = mean_rating, fill = category)) +
     legend.position = c(.14, .93)
   )
 ```
+Es fällt auf, dass die häufigsten Filme allgemein sehr gut bewertet werden.
+
 ***
 #### Implementierung Top-N Metriken
 ```{r}
@@ -551,8 +553,38 @@ ggplot(data=df_combined, aes(x=coverage, y=novelty, group=1)) +
 ```
 ***
 #### Implementierung Top-N Monitor
+###### Fixiere 20 zufällig gewählte Testkunden für alle Modellvergleiche
 ```{r}
+set.seed(42)
+users <- movies %>% group_by(user) %>% summarise(rating = mean(rating)) %>% sample_n(20) %>% select(user)
+# head(users)
+```
 
+###### Bestimme den Anteil der Top-N Empfehlung nach Genres pro Kunde
+```{r}
+df_user_genres <- inner_join(genres, users, by = 'user') %>% group_by(user, genres) %>% summarise(count = n()) %>% ungroup()
+df_user_genres
+
+colourCount = length(unique(df_user_genres$genres))
+getPalette = colorRampPalette(brewer.pal(9, "Paired"))
+
+ggplot(data=df_user_genres, aes(y=user, x=count, fill=genres)) +
+  geom_col(stat="identity", position = 'fill') +
+  scale_y_discrete(expand = c(0,0)) +
+  scale_x_continuous(expand = c(0,0)) +
+  labs(
+    title = "Anteil Genres von 20 zufälligen Kunden",
+    x = "Anteil",
+    y = "Kunde",
+    fill = element_blank()
+  ) +
+  scale_fill_manual(values = getPalette(colourCount)) +
+  theme_classic() +
+  theme(axis.text.x = element_blank(),
+      axis.ticks.x = element_blank(),
+      axis.line.x = element_blank(),
+      text = element_text(size = 12) # text size
+  )
 ```
 
 

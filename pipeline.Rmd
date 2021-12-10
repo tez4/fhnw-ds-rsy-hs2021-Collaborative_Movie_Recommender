@@ -580,6 +580,7 @@ df_user_genres <- inner_join(df_recommendations, df_genres, by = 'item') %>% gro
 set.seed(42)
 users <- df_user_genres %>% group_by(user) %>% summarise(x = sum(count)) %>% sample_n(20) %>% select(user)
 df_user_genres <- inner_join(df_user_genres, users, by = 'user')
+df_user_genres <- df_user_genres %>% arrange('user')
 df_user_genres
 
 # create plot
@@ -591,7 +592,7 @@ ggplot(data=df_user_genres, aes(y=user, x=count, fill=genres)) +
   scale_y_discrete(expand = c(0,0)) +
   scale_x_continuous(expand = c(0,0)) +
   labs(
-    title = "Anteil Genres von 20 zufälligen Kunden",
+    title = "Anteil Genres in Top-N Empfehlung von 20 zuf. Kunden",
     x = "Anteil",
     y = "Kundennummer",
     fill = element_blank()
@@ -607,7 +608,34 @@ ggplot(data=df_user_genres, aes(y=user, x=count, fill=genres)) +
 ###### Bestimme pro Kunde den Anteil nach Genres seiner Top-Filme (=Filme, 
 welche vom Kunden die besten Bewertungen erhalten haben)
 ```{r}
+df_all <- inner_join(movies, users, by = 'user')
+df_best <- df_all %>% group_by(user) %>% summarise(mean_rating = mean(rating))
+df_best <- inner_join(df_all, df_best, by = 'user')
+df_best <- df_best %>% filter(rating > mean_rating + 0.5)
+df_user_genres <- inner_join(df_best, df_genres, by = 'item') %>% group_by(user, genres) %>% summarise(count = n())
+df_user_genres
 
+# create plot
+colourCount = length(unique(df_user_genres$genres))
+getPalette = colorRampPalette(brewer.pal(9, "Paired"))
+
+ggplot(data=df_user_genres, aes(y=user, x=count, fill=genres)) +
+  geom_col(position = 'fill') +
+  scale_y_discrete(expand = c(0,0)) +
+  scale_x_continuous(expand = c(0,0)) +
+  labs(
+    title = "Anteil Genres der bestbewerteten Filme von 20 zuf. Kunden",
+    x = "Anteil",
+    y = "Kundennummer",
+    fill = element_blank()
+  ) +
+  scale_fill_manual(values = getPalette(colourCount)) +
+  theme_classic() +
+  theme(axis.text.x = element_blank(),
+      axis.ticks.x = element_blank(),
+      axis.line.x = element_blank(),
+      text = element_text(size = 12) # text size
+  )
 ```
 
 

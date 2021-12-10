@@ -7,9 +7,8 @@ output:
 ---
 R-Version: **[Default] [32-bit] C:\\Program Files\\R\\R-4.1.0**
 
-*** 
-## Installieren der Packete
-```{r message=FALSE, warning=FALSE}
+```{r echo=FALSE, cache=FALSE, results=FALSE, comment=FALSE, warning=FALSE}
+# nötige Packete
 packages <- c("tidyverse", "data.table", "lubridate", "ggplot2", "ggthemes", "recommenderlab", "knitr")
 
 # Noch nicht installierte Pakete installieren
@@ -27,24 +26,16 @@ source("helper.R")
 ```
 
 ***
-## Datenimport
+#### data wrangling
 ```{r}
+# Daten importieren
 data(MovieLense)
-MovieLense
-```
 
-***
-#### alle charakter variabeln faktorisieren
-```{r}
-
+# dataframe erstellen
 movies <- as(MovieLense, "data.frame")
 movies <- movies %>% mutate_if(is.character, as.factor)
 
-head(movies)
-
-```
-
-```{r}
+# breite version des dataframe erstellen
 movies_wider <- pivot_wider(
   movies,
   id_cols = user,
@@ -52,9 +43,9 @@ movies_wider <- pivot_wider(
   values_from = rating,
   values_fill = NULL,
 )
-
-head(movies_wider)
 ```
+
+
 
 ***
 ## Explorative Datenanalyse
@@ -174,19 +165,18 @@ In dieser Grafik ist die Verteilung der bewertungen zu sehen. Die Bewertungen 4 
 ```{r}
 # get rating count per user, add as column for further processing
 counts <- movies %>% group_by(user) %>% count()
-movies <- merge(movies, counts, by="user")
-movies_wider <- merge(movies_wider, counts, by="user")
+movies2 <- merge(movies, counts, by="user")
+movies_wider2 <- merge(movies_wider, counts, by="user")
 
 # avoid users with almost no ratings, use median as threshold
 median_count <- median(counts$n)
-print(median_count)
 
 # get sample
 set.seed(623)
-movies_sample <- movies_wider %>% filter(n > median_count) %>% sample_n(5)
+movies_sample <- movies_wider2 %>% filter(n > median_count) %>% sample_n(5)
 
 # create long table
-movies_sample_long <- filter(movies, user %in% movies_sample$user)
+movies_sample_long <- filter(movies2, user %in% movies_sample$user)
 
 # drop item names, 
 movies_sample_long <- subset(movies_sample_long, select = -c(item))
@@ -194,10 +184,10 @@ movies_sample_long <- subset(movies_sample_long, select = -c(item))
 df2b <- genres%>%
   group_by(genres)
   
-movies_sample_long_grouped <- movies_sample_long %>% group_by(user, rating) %>% summarise(rating_dens = length(user) / first(n), user = first(user), n=first(n), rating = first(rating))
+movies_sample_long_grouped <- movies_sample_long %>% group_by(user, rating) %>% summarise(rating_dens = length(user) / first(n), n=first(n), rating = first(rating))
   
 ggplot(genres, aes(x = rating, fill = genres)) +
-  geom_bar(alpha = 1, bins = 10) +
+  geom_bar(alpha = 1) +
   facet_wrap(~genres)+
   scale_y_continuous(expand = c(0,0)) +
   scale_x_continuous(expand = c(0,0)) +

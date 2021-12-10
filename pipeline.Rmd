@@ -308,7 +308,8 @@ ggplot(sample_n(movies_span, 20), aes(x=user)) +
 
 
 ggplot(movies_span, aes(x=user)) +
-  geom_bar(colour="black", aes(span)) +
+  geom_bar(aes(span), fill = 'steelblue') +
+  scale_y_continuous(expand = c(0,0)) +
   labs(
     title = "Spannweite Kundenratings",
     subtitle = "",
@@ -333,7 +334,6 @@ movies_sample_long_grouped <- movies %>% group_by(rating) %>% summarise(rating_d
 ggplot(movies_sample_long_grouped, aes(x=rating, y = rating_dens)) + 
   geom_col(fill = 'steelblue') +
   scale_y_continuous(expand = c(0,0)) +
-  scale_x_continuous(expand = c(0,0)) +
   labs(
     title = "Häufigkeit der Kundenbewertungen",
     subtitle = "N = 943 Kunden",
@@ -554,28 +554,46 @@ ggplot(data=df_combined, aes(x=coverage, y=novelty, group=1)) +
 ***
 #### Implementierung Top-N Monitor
 ###### Fixiere 20 zufällig gewählte Testkunden für alle Modellvergleiche
-```{r}
-set.seed(42)
-users <- movies %>% group_by(user) %>% summarise(rating = mean(rating)) %>% sample_n(20) %>% select(user)
-# head(users)
-```
-
 ###### Bestimme den Anteil der Top-N Empfehlung nach Genres pro Kunde
 ```{r}
-df_user_genres <- inner_join(genres, users, by = 'user') %>% group_by(user, genres) %>% summarise(count = n()) %>% ungroup()
+# create dataframe with genres
+df_genres <- genres %>% group_by(item, genres) %>% summarise(mean(rating))
+
+# make predictions and create list with them
+rec <- Recommender(train, method = "IBCF", param=list(method="Cosine", k=30, normalize = NULL, na_as_zero = TRUE))
+pre <- predict(rec, test, n = 20)
+reco_list <- as(pre, "list")
+
+# create data frame of top n recommendations
+df_recommendations <- data.frame(matrix(ncol=2,nrow=0, dimnames=list(NULL, c("user", "item"))))
+
+for (i in 1:length(reco_list)) {
+  for (j in 1:length(reco_list[[i]])) {
+    df_recommendations[nrow(df_recommendations) + 1,] = c(names(reco_list[i]),reco_list[[i]][j])
+  }
+}
+
+# get group size of recommended genres of all 80 users
+df_user_genres <- inner_join(df_recommendations, df_genres, by = 'item') %>% group_by(user, genres) %>% summarise(count = n())
+
+# select our users
+set.seed(42)
+users <- df_user_genres %>% group_by(user) %>% summarise(x = sum(count)) %>% sample_n(20) %>% select(user)
+df_user_genres <- inner_join(df_user_genres, users, by = 'user')
 df_user_genres
 
+# create plot
 colourCount = length(unique(df_user_genres$genres))
 getPalette = colorRampPalette(brewer.pal(9, "Paired"))
 
 ggplot(data=df_user_genres, aes(y=user, x=count, fill=genres)) +
-  geom_col(stat="identity", position = 'fill') +
+  geom_col(position = 'fill') +
   scale_y_discrete(expand = c(0,0)) +
   scale_x_continuous(expand = c(0,0)) +
   labs(
     title = "Anteil Genres von 20 zufälligen Kunden",
     x = "Anteil",
-    y = "Kunde",
+    y = "Kundennummer",
     fill = element_blank()
   ) +
   scale_fill_manual(values = getPalette(colourCount)) +
@@ -585,6 +603,11 @@ ggplot(data=df_user_genres, aes(y=user, x=count, fill=genres)) +
       axis.line.x = element_blank(),
       text = element_text(size = 12) # text size
   )
+```
+###### Bestimme pro Kunde den Anteil nach Genres seiner Top-Filme (=Filme, 
+welche vom Kunden die besten Bewertungen erhalten haben)
+```{r}
+
 ```
 
 

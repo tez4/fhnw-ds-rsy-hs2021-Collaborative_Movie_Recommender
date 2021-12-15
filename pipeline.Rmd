@@ -7,10 +7,9 @@ output:
 ---
 R-Version: **[Default] [32-bit] C:\\Program Files\\R\\R-4.1.0**
 
-*** 
-## Installieren der Packete
-```{r message=FALSE, warning=FALSE}
-packages <- c("tidyverse", "data.table", "lubridate", "ggplot2", "ggthemes", "recommenderlab", "knitr")
+```{r echo=FALSE, cache=FALSE, results=FALSE, comment=FALSE, warning=FALSE}
+# nötige Packete
+packages <- c("tidyverse", "data.table", "lubridate", "ggplot2", "ggthemes", "recommenderlab", "knitr", 'pals', 'RColorBrewer')
 
 # Noch nicht installierte Pakete installieren
 installed_packages <- packages %in% rownames(installed.packages())
@@ -22,29 +21,21 @@ if (any(installed_packages == FALSE)) {
 # Laden der Packete
 invisible(lapply(packages, library, character.only = TRUE))
 
-# summaries zu "TRUE" setzen um summaries anzuzeigen
-summaries = TRUE
+# Importieren von Funktionene aus helper file
+source("helper.R")
 ```
 
 ***
-## Datenimport
+#### data wrangling
 ```{r}
+# Daten importieren
 data(MovieLense)
-MovieLense
-```
 
-***
-#### alle charakter variabeln faktorisieren
-```{r}
-
+# dataframe erstellen
 movies <- as(MovieLense, "data.frame")
 movies <- movies %>% mutate_if(is.character, as.factor)
 
-head(movies)
-
-```
-
-```{r}
+# breite version des dataframe erstellen
 movies_wider <- pivot_wider(
   movies,
   id_cols = user,
@@ -52,8 +43,6 @@ movies_wider <- pivot_wider(
   values_from = rating,
   values_fill = NULL,
 )
-
-head(movies_wider)
 ```
 
 ***
@@ -175,19 +164,18 @@ In dieser Grafik ist die Verteilung der bewertungen zu sehen. Die Bewertungen 4 
 ```{r}
 # get rating count per user, add as column for further processing
 counts <- movies %>% group_by(user) %>% count()
-movies <- merge(movies, counts, by="user")
-movies_wider <- merge(movies_wider, counts, by="user")
+movies2 <- merge(movies, counts, by="user")
+movies_wider2 <- merge(movies_wider, counts, by="user")
 
 # avoid users with almost no ratings, use median as threshold
 median_count <- median(counts$n)
-print(median_count)
 
 # get sample
 set.seed(623)
-movies_sample <- movies_wider %>% filter(n > median_count) %>% sample_n(5)
+movies_sample <- movies_wider2 %>% filter(n > median_count) %>% sample_n(5)
 
 # create long table
-movies_sample_long <- filter(movies, user %in% movies_sample$user)
+movies_sample_long <- filter(movies2, user %in% movies_sample$user)
 
 # drop item names, 
 movies_sample_long <- subset(movies_sample_long, select = -c(item))
@@ -300,8 +288,6 @@ Bei der Verteilung der ratings sind von User zu User Unterschiede feststellbar. 
 movies_span <- movies %>% group_by(user) %>% 
   summarize(mean = mean(rating), min = min(rating), max = max(rating), span = (max(rating) - min(rating)))
 
-movies_span
-
 set.seed(123)
 
 ggplot(sample_n(movies_span, 20), aes(x=user)) +
@@ -321,7 +307,8 @@ ggplot(sample_n(movies_span, 20), aes(x=user)) +
 
 
 ggplot(movies_span, aes(x=user)) +
-  geom_bar(colour="black", aes(span)) +
+  geom_bar(aes(span), fill = 'steelblue') +
+  scale_y_continuous(expand = c(0,0)) +
   labs(
     title = "Spannweite Kundenratings",
     subtitle = "",
@@ -335,16 +322,54 @@ ggplot(movies_span, aes(x=user)) +
   )
   
 ```
-In diesen Grafiken sehen wir detailliertere Informationen über die Spannweite und den Mittelpunkt. In der ersten Übersicht ist die Spannweite und der Mittelpunkt einzelner Kunden dargestellt. Es fällt auf, dass trotz des teilweise relativ hohem Mittelwert alle Ratings von 1-5 abgegeben wurden. Ein rating von 5 wurde sozusagen immer abgegeben, 1 nicht immer.
+0In diesen Grafiken sehen wir detailliertere Informationen über die Spannweite und den Mittelpunkt. In der ersten Übersicht ist die Spannweite und der Mittelpunkt einzelner Kunden dargestellt. Es fällt auf, dass trotz des teilweise relativ hohem Mittelwert alle Ratings von 1-5 abgegeben wurden. Ein rating von 5 wurde sozusagen immer abgegeben, 1 nicht immer.
 In der zweiten Übersicht ist die Spannweite aller Kunden dargestellt. Hier wird sichtbar, dass die meisten Kunden Bewertungen von 1-5 abgegeben haben (Spannweite=4), und nur weinige sehr homogen bewertet haben (Spannweite = 1-2). Eine kleine Spannweite kann hier auch aufgetreten sein, da diese User sehr wenige Bewertungen abgegeben haben.
 
 ***
 #### 5.Welchen Einfluss hat die Normierung der Ratings pro Kunde auf deren Verteilung?
 ```{r}
-hist(getRatings(MovieLense), 
-     breaks=15,
-     main = "Verteilung der Bewertungen")
-#hist(getRatings(MovieLenseNorm), breaks=40)
+movies_sample_long_grouped <- movies %>% group_by(rating) %>% summarise(rating_dens = n())
+
+ggplot(movies_sample_long_grouped, aes(x=rating, y = rating_dens)) + 
+  geom_col(fill = 'steelblue') +
+  scale_y_continuous(expand = c(0,0)) +
+  labs(
+    title = "Häufigkeit der Kundenbewertungen",
+    subtitle = "N = 943 Kunden",
+    x = "User Bewertung (1-5)", 
+    y = "Anzahl",
+    fill = element_blank()
+  ) +
+  scale_fill_manual("legend", values = c("cyan3", "cyan4", "darkolivegreen3", "darkolivegreen", "coral4")
+                    )+
+  theme_classic() + 
+  theme(
+    text = element_text(size = 12),
+    legend.position = 'bottom'
+  )
+```
+```{r}
+MovNorm <- normalize(MovieLense, method="Z-score")
+mov <- as(MovNorm, "data.frame")
+
+ggplot(movies_sample_long_grouped, aes(x=rating)) + 
+  geom_histogram(fill = 'steelblue', bins = 70) +
+  scale_y_continuous(expand = c(0,0)) +
+  scale_x_continuous(expand = c(0,0)) +
+  labs(
+    title = "Häufigkeit der Kundenbewertungen",
+    subtitle = "N = 943 Kunden",
+    x = "User Bewertung Normiert", 
+    y = "Anzahl",
+    fill = element_blank()
+  ) +
+  scale_fill_manual("legend", values = c("cyan3", "cyan4", "darkolivegreen3", "darkolivegreen", "coral4")
+                    )+
+  theme_classic() + 
+  theme(
+    text = element_text(size = 12),
+    legend.position = 'bottom'
+  )
 ```
 Die Ratings sind nun ungefähr Normalverteilt mit einem Durchschnittsrating von 0 und einer Standardabweichung von 1. 
 Erkennbar ist, dass die Verteilung rechtssteil und linksschief ist, also mehrheitlich positive Bewertungen abgegeben wurden. 
@@ -366,116 +391,35 @@ Bei den Filmen ist eine ähnliche Tendenz wahrzunehmen, jedoch sind die vertikal
 ***
 ## Datenreduktion
 ```{r}
-# convert into df
-data <- as(MovieLense, "data.frame")
-
-# get the 400 users with most ratings
-counts <- data %>% group_by(user) %>% count() %>% arrange(desc(n), user) %>% head(400)
-data <- inner_join(counts, data, by="user")
-data <- data %>% select(user, item, rating) %>% ungroup
-data <- as.data.frame(data)
-
-# get the 700 Movies with most ratings
-counts <- data %>% group_by(item) %>% count() %>% arrange(desc(n), item) %>% head(700)
-data <- inner_join(counts, data, by="item")
-data <- data %>% select(user, item, rating) %>% ungroup
-data <- as.data.frame(data)
-
-# convert back into realRatingMatrix
-ratingMatrix <- as(data, "realRatingMatrix")
-
+ratingMatrix <- data_reduction_dense(MovieLense)
 ratingMatrix
 ```
 
 ```{r}
-get_sparsity <- function(Matrix) {
-  round(( 1 - (nratings(Matrix) / (dim(Matrix)[1] * dim(Matrix)[2]))) * 100,2)
-}
-
-show_sparsity <- function(Matrix, Name) {
-
-  Measurement <- list('Matrix','Dimension', 'Sparsity', 'Density')
-  Value <- list(Name, paste('(',toString(dim(Matrix)), ')'),paste(get_sparsity(Matrix), '%' ), paste(100 - get_sparsity(Matrix), '%' ))
-  df <- cbind(Measurement,Value)
-  head(df)
-}
-
-show_sparsity_change <- function(oldMatrix, newMatrix) {
-  print(list(show_sparsity(oldMatrix, 'Old Matrix'), show_sparsity(newMatrix, 'New Matrix')))
-  
-  
-}
-
 show_sparsity_change(MovieLense, ratingMatrix)
 ```
-
-```{r}
-old_matrix <- as(MovieLense, "data.frame") %>% 
-  group_by(item) %>%  
-  summarize(
-    mean_rating = mean(rating),
-    ratings = n()
-  ) %>% 
-  mutate(
-    matrix = 'a) alte Matrix'
-  )
-
-new_matrix <- as(ratingMatrix, "data.frame") %>% 
-  group_by(item) %>%  
-  summarize(
-    mean_rating = mean(rating),
-    ratings = n()
-  ) %>% 
-  mutate(
-    matrix = 'b) neue Matrix'
-  )
-
-comparison <- bind_rows(old_matrix, new_matrix)
-
-ggplot(comparison, aes(x = mean_rating, fill = matrix)) +
-  geom_density(alpha = 0.5, bw = 0.08) +
-  scale_y_continuous(expand = c(0,0)) +
-  scale_x_continuous(expand = c(0,0)) +
-  labs(
-    title = "Verteilung mittlere Kundenratings pro Film",
-    subtitle = "N = 1664 Filme",
-    x = "Durchschnittliche Bewertung", 
-    y = "Dichte",
-    fill = element_blank()
-  ) +
-  theme_classic() +
-  theme(
-    text = element_text(size = 12),
-    legend.position = c(.90, .95)
-  )
-```
-
 ```{r}
 image(ratingMatrix, main = "Raw Ratings")
+```
+Man sieht sehr klar, dass die matrix nun deutlich weniger sparse ist.
+
+```{r}
+show_change_of_rating_distribution(MovieLense, ratingMatrix)
 ```
 
 ***
 ## Analyse Ähnlichkeitsmatrix
 #### 1. Zerlege den reduzierten MovieLense Datensatz in ein disjunktes Trainings- und Testdatenset im Verhältnis 4:1
 ```{r}
-#split <- rowCount(ratingMatrix) * 0.75
-# train <- ratingMatrix[1:300]
-# test <- ratingMatrix[301:400]
+both <- split_dataset(ratingMatrix, 0.8)
+train <- both[[1]]
+test <- both[[2]]
 
-# train-test split 
-set.seed(42)
-data <- as(ratingMatrix, "data.frame")
-df <- data %>% group_by(user) %>% summarize(mean_rating = mean(rating))
-
-df <- sample_frac(df, size = 0.8, replace = FALSE)
-df_train <- semi_join(data,df,by='user')
-df_test <- anti_join(data,df_train,by='user')
-train <- as(df_train, "realRatingMatrix")
-test <- as(df_test, 'realRatingMatrix')
-
+print('Trainingsdatenset:')
 dim(train)
+print('')
+print('Testdatenset:')
 dim(test)
-
 ```
 
 ***
@@ -516,7 +460,7 @@ ggplot(df, aes(x = colSum)) +
   labs(
     title = "Verteilung der Anzahl ähnlicher Filme",
     # subtitle = paste("N = ", nrow(df3), " Filme"),
-    x = "Häufigkeit zu der der Film als Nachbar auftaucht", 
+    x = "Anzahl Filme bei denen der Film als Nachbar auftaucht", 
     y = "Häufigkeit"
   ) +
   theme_classic() +
@@ -574,63 +518,142 @@ ggplot(data1, aes(x = mean_rating, fill = category)) +
     legend.position = c(.14, .93)
   )
 ```
+Es fällt auf, dass die häufigsten Filme allgemein sehr gut bewertet werden.
 
 ***
 #### Implementierung Top-N Metriken
 ```{r}
-show_precision <- function(listOfDifferentN, ratingMatrix, threshold) {
-  
-  # normalize the rating matrix
-  ratingMatrix <- normalize(ratingMatrix, method="Z-score", row=TRUE)
-  
-  # create a training set and a test set with true positives for recall and precision
-  data <- as(ratingMatrix, "data.frame")
-  relevant <- data %>% group_by(user) %>% sample_n(30)
-  true_positives <- relevant %>% filter(rating >= threshold)
-  false_positives <- relevant %>% filter(rating < threshold)
-  
-  # remove testing observations from training set
-  train <- anti_join(data, relevant,by=c('user','item'))
-  train <- as(train, 'realRatingMatrix')
-  
-  # train model based on training set
-  rec <- Recommender(train, method = "IBCF", param=list(method="Cosine", k=30, normalize = NULL, na_as_zero = TRUE)) #normalize = 'center', 'Z-score'
-  
-  for (N in listOfDifferentN) {
+show_precision(c(5,10,15,20,25,30), ratingMatrix, 0)
+```
 
-    # predict top N movies
-    pre <- predict(rec, train, n = N)
-    reco_list <- as(pre, "list")
-    recommendations <- as.data.frame(reco_list)
-    
-    # find true positives and false positives for all users and add them up
-    true_total <- 0
-    false_total <- 0
-    for (i in as.list(unique(true_positives['user']))$user) {
-      our_user <- paste('X', i, sep = '')
-      recommendations['item'] <- recommendations[our_user]
+***
+#### Catalog coverage and System-level novelty
+```{r}
+rec <- Recommender(train, method = "IBCF", param=list(method="Cosine", k=30, normalize = NULL, na_as_zero = TRUE)) #normalize = 'center', 'Z-score'
 
-      true_total <- true_total + nrow(inner_join(recommendations['item'], true_positives %>% filter(user == as.integer(i)), by = 'item'))
-      false_total <- false_total + nrow(inner_join(recommendations['item'], false_positives %>% filter(user == as.integer(i)), by = 'item'))
-    }
-    
-    # print Summary
-    print(paste('N =', N))
-    print(paste('Number of True Positives:',true_total))
-    print(paste('Number of False Positives:',false_total))
-    print(paste('Precision:',true_total / (true_total + false_total)))
-    print('')
-  }
+df_coverage <- show_coverage(c(5,10,15,20,25,30), rec)
+df_novelty <- show_novelty(c(5,10,15,20,25,30), rec)
+
+df_combined <- inner_join(df_coverage, df_novelty, by = 'N')
+df_combined
+```
+Coverage: Summe aller unterschiedlichen Produkte, welche in den Top-N Listen aller Kund*Innen ingesamt auftauchen dividiert durch die Menge aller Produkte.
+Novelty: Mittel der Shannon Information der Popularität der Produkte in der Top-N Liste gemittelt über alle Kund*Innen. 
+
+```{r}
+ggplot(data=df_combined, aes(x=coverage, y=novelty, group=1)) +
+  geom_line() +
+  labs(
+    title = "Coverage gegenüber Novelty für verschiedene N",
+    y = "Novelty",
+    x = "Coverage"
+  ) +
+  theme(text = element_text(size = 12))
+```
+
+***
+#### Wahl des optimalen Recommenders
+
+```{r}
+
+ns <- c(10, 15, 20, 25, 30)
+
+for (i in 1:length(ns)) 
+{
+  rec <- Recommender(train, method = "IBCF", param=list(method="Cosine", k=ns[i], normalize = NULL, na_as_zero = TRUE)) #normalize = 'center', 'Z-score'
 }
 
-show_precision(c(5,10,15,20,25,30), ratingMatrix, 0)
 ```
 
 
 
 
+***
+#### Implementierung Top-N Monitor
+###### Fixiere 20 zufällig gewählte Testkunden für alle Modellvergleiche
+###### Bestimme den Anteil der Top-N Empfehlung nach Genres pro Kunde
+```{r}
+# create dataframe with genres
+df_genres <- genres %>% group_by(item, genres) %>% summarise(mean(rating))
 
+# make predictions and create list with them
+rec <- Recommender(train, method = "IBCF", param=list(method="Cosine", k=30, normalize = NULL, na_as_zero = TRUE))
+pre <- predict(rec, test, n = 20)
+reco_list <- as(pre, "list")
 
+# create data frame of top n recommendations
+df_recommendations <- data.frame(matrix(ncol=2,nrow=0, dimnames=list(NULL, c("user", "item"))))
+
+for (i in 1:length(reco_list)) {
+  for (j in 1:length(reco_list[[i]])) {
+    df_recommendations[nrow(df_recommendations) + 1,] = c(names(reco_list[i]),reco_list[[i]][j])
+  }
+}
+
+# get group size of recommended genres of all 80 users
+df_user_genres <- inner_join(df_recommendations, df_genres, by = 'item') %>% group_by(user, genres) %>% summarise(count = n())
+
+# select our users
+set.seed(42)
+users <- df_user_genres %>% group_by(user) %>% summarise(x = sum(count)) %>% sample_n(20) %>% select(user)
+df_user_genres <- inner_join(df_user_genres, users, by = 'user')
+df_user_genres <- df_user_genres %>% arrange('user')
+df_user_genres
+
+# create plot
+colourCount = length(unique(df_user_genres$genres))
+getPalette = colorRampPalette(brewer.pal(9, "Paired"))
+
+ggplot(data=df_user_genres, aes(y=user, x=count, fill=genres)) +
+  geom_col(position = 'fill') +
+  scale_y_discrete(expand = c(0,0)) +
+  scale_x_continuous(expand = c(0,0)) +
+  labs(
+    title = "Anteil Genres in Top-N Empfehlung von 20 zuf. Kunden",
+    x = "Anteil",
+    y = "Kundennummer",
+    fill = element_blank()
+  ) +
+  scale_fill_manual(values = getPalette(colourCount)) +
+  theme_classic() +
+  theme(axis.text.x = element_blank(),
+      axis.ticks.x = element_blank(),
+      axis.line.x = element_blank(),
+      text = element_text(size = 12) # text size
+  )
+```
+###### Bestimme pro Kunde den Anteil nach Genres seiner Top-Filme (=Filme, 
+welche vom Kunden die besten Bewertungen erhalten haben)
+```{r}
+df_all <- inner_join(movies, users, by = 'user')
+df_best <- df_all %>% group_by(user) %>% summarise(mean_rating = mean(rating))
+df_best <- inner_join(df_all, df_best, by = 'user')
+df_best <- df_best %>% filter(rating > mean_rating + 0.5)
+df_user_genres <- inner_join(df_best, df_genres, by = 'item') %>% group_by(user, genres) %>% summarise(count = n())
+df_user_genres
+
+# create plot
+colourCount = length(unique(df_user_genres$genres))
+getPalette = colorRampPalette(brewer.pal(9, "Paired"))
+
+ggplot(data=df_user_genres, aes(y=user, x=count, fill=genres)) +
+  geom_col(position = 'fill') +
+  scale_y_discrete(expand = c(0,0)) +
+  scale_x_continuous(expand = c(0,0)) +
+  labs(
+    title = "Anteil Genres der bestbewerteten Filme von 20 zuf. Kunden",
+    x = "Anteil",
+    y = "Kundennummer",
+    fill = element_blank()
+  ) +
+  scale_fill_manual(values = getPalette(colourCount)) +
+  theme_classic() +
+  theme(axis.text.x = element_blank(),
+      axis.ticks.x = element_blank(),
+      axis.line.x = element_blank(),
+      text = element_text(size = 12) # text size
+  )
+```
 
 
 ```{r}
@@ -645,7 +668,7 @@ image(as(rec@model$sim, "realRatingMatrix"))
 
 #image(as(similarity(train, method = "Cosine", which = "items"), "matrix"))
 
-#plotSimilarityMatrix(train, y = NULL, clusLabels = NULL, colX = NULL, colY = NULL, myLegend = NULL, fileName = "posteriorSimilarityMatrix", savePNG = FALSE, semiSupervised = FALSE, showObsNames = FALSE, clr = FALSE, clc = FALSE, plotWidth = 500, plotHeight = 450)
+# plotSimilarityMatrix(train, y = NULL, clusLabels = NULL, colX = NULL, colY = NULL, myLegend = NULL, fileName = "posteriorSimilarityMatrix", savePNG = FALSE, semiSupervised = FALSE, showObsNames = FALSE, clr = FALSE, clc = FALSE, plotWidth = 500, plotHeight = 450)
 
 #dim(as.matrix(subset(movies_wider, select = -c(user))))
 

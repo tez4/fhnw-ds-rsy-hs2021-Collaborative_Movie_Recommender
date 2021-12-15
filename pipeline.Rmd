@@ -645,8 +645,27 @@ image(as(rec@model$sim, "realRatingMatrix"))
 
 #image(as(similarity(train, method = "Cosine", which = "items"), "matrix"))
 
-plotSimilarityMatrix(train, y = NULL, clusLabels = NULL, colX = NULL, colY = NULL, myLegend = NULL, fileName = "posteriorSimilarityMatrix", savePNG = FALSE, semiSupervised = FALSE, showObsNames = FALSE, clr = FALSE, clc = FALSE, plotWidth = 500, plotHeight = 450)
+#plotSimilarityMatrix(train, y = NULL, clusLabels = NULL, colX = NULL, colY = NULL, myLegend = NULL, fileName = "posteriorSimilarityMatrix", savePNG = FALSE, semiSupervised = FALSE, showObsNames = FALSE, clr = FALSE, clc = FALSE, plotWidth = 500, plotHeight = 450)
 
+#dim(as.matrix(subset(movies_wider, select = -c(user))))
+
+#sample <- movies_wider[, colnames(movies_wider) != 'user']
+#sample <- sample[, sample(ncol(sample), size=100)]
+
+#sample_matrix <- as.matrix
+
+
+# reduce samples to 100 users
+relevant <- movies %>% group_by(item) %>% sample_n(100, replace=TRUE)
+#true_positives <- relevant %>% sum(rating >= threshold)
+#false_positives <- relevant %>% sum(rating < threshold)
+
+# remove testing observations from training set
+sample <- anti_join(movies, relevant,by=c('user','item'))
+sample <- as(sample, 'realRatingMatrix')
+sample_matrix <- as(sample, 'matrix')
+
+sample
 ```
 
 
@@ -659,11 +678,30 @@ cosine_sim <- function(A, B)
   return(similarity)
 }
 
+cosine_sim2 <- function(A, B)
+{
+  zae <- A %*% t(B)
+  nen1 <- A %*% t(A)
+  nen2 <- B %*% t(B)
+  nen <- sqrt(diag(nen1) %*% t(diag(nen2)))
+  print(dim(zae))
+  print(dim(nen))
+  similarity <- zae / nen
+  return(similarity)
+}
+
 jaccard_sim <- function(A, B)
 {
   inter = length(intersect(A, B))
   union = length(A) + length(B) - inter
   jac = inter / union
+  return (jac)
+}
+
+jaccard_sim2 <- function(A, B)
+{
+  inter = merge(A, t(B))
+  jac = inter / ((2 * length(A[,0])) - inter)
   return (jac)
 }
 
@@ -678,37 +716,72 @@ jaccard_sim(A, B)
 
 ```
 
+
 ```{r}
+
 similarity <- as.matrix(rec@model$sim)
 dim(similarity)
+image(rec@model$sim)
+
+```
+
+cosine diy implementation
+
+
+```{r}
+
+# replace nas with 0 (no adjusted cosine similarity)
+sample_matrix_zero <- sample_matrix
+sample_matrix_zero[is.na(sample_matrix_zero)] <- 0
+
+# ibcf, because columns are taken here
+# row count
+#len <- dim(wide_matrix)[2]
+#res <- diag(len)
+
+#for(i in 1:len)
+#{
+#  for(j in 1:len)
+#  {
+#    if(i < j & i != j)
+#    {
+#      res[i,j] <- cosine_sim(wide_matrix[,i], wide_matrix[,j])
+#      res[j,i] <- res[i,j]
+#    }
+#  }
+#}
+
+cosine_sim_matrix <- cosine_sim2(t(sample_matrix_zero), t(sample_matrix_zero))
+
+dim(cosine_sim_matrix)
+cosine_sim_matrix[1:5, 1:5]
+
+```
+
+cosine recommenderlab implementation
+
+```{r}
+as(sample_matrix, "realRatingMatrix")
+```
+
+```{r}
+as(train, "data.frame")
 ```
 
 
 ```{r}
-wide_matrix <- as.matrix(subset(movies_wider, select = -c(user)))
 
-# replace nas with 0 (no adjusted cosine similarity)
-wide_matrix[is.na(wide_matrix)] <- 0
+xy <- sample %>% pivot_longer(colnames(sample), names_to='item', values_to = 'rating')
+xy['user'] = 0
+xy
 
-# ibcf, because columns are taken here
-# row count
-len <- dim(wide_matrix)[2]
-res <- diag(len)
+```
 
-for(i in 1:len)
-{
-  for(j in 1:len)
-  {
-    if(i < j & i != j)
-    {
-      res[i,j] <- cosine_sim(wide_matrix[,i], wide_matrix[,j])
-      res[j,i] <- res[i,j]
-    }
-  }
-}
-res[1:10, 1:10]
 
-#dim(wide_matrix)
+```{r}
+
+rec <- Recommender(as(train, "realRatingMatrix"), method = "IBCF", param=list(method="Cosine", k=100, normalize = NULL, na_as_zero = TRUE))
+image(rec@model$sim)
 
 ```
 
@@ -719,46 +792,102 @@ res[1:10, 1:10]
 #wide_matrix[2,1]
 #as.matrix(subset(movies_wider, select = -c(user)))[,2]
 
-df_res <- as.data.frame(res)
-df_res
-
-image(as(df_res, "realRatingMatrix"))
-as(df_test, 'realRatingMatrix')
+cosine_sim <- as.data.frame(cosine_sim_matrix)
+dim(df_res)
+#image(as(res, "matrix"))
+image(as(res, "realRatingMatrix"))
+#as(df_test, 'realRatingMatrix')
 #ggplot(df_res, aes(x = x_variable, y = y_variable)) + stat_density2d(aes(fill = ..density..), contour = F, geom = 'tile')
 
 ```
+
+Compare matrix similarity with implementations in recommenderlab
+
+```{r}
+max(abs(Matrix(newmatrix) - mymatrix))
+```
+
 
 
 ```{r}
 #ggplot(df_res, aes(x=V1, y=V2) ) +
 #  geom_bin2d() +
 #  theme_bw()
+rownames(res) <- c()
+colnames(res) <- c()
+
 require(lattice)
 levelplot(res)
 ```
 
+
 ```{r}
-wide_matrix <- as.matrix(subset(movies_wider, select = -c(user)))
+
+xy <- as(rec@model$sim, "matrix")
+rownames(xy) <- c()
+colnames(xy) <- c()
+
+levelplot(xy)
+
+```
+
+```{r}
+t(sample_bin[0:10, 0:10])
+```
+
+```{r}
+sample_bin[0:10, 0:10]
+```
+
+```{r}
+(1 * sample_bin)[0:10, 0:10]
+
+#as.numeric(sample_bin)
+```
+
+
+```{r}
+sample_bin[0:10, 0:10]
+```
+
+```{r}
+sample_bin[,4]
+```
+
+```{r}
+#inter <- merge(sample_bin[0:10, 0:10], sample_bin[0:10, 0:10])
+inter <- intersect(sample_bin[,4], sample_bin[,2])
+inter
+#jac -< inter / ((2 * length(A[,0])) - inter)
+```
+
+
+```{r}
+sample_bin <- as(binarize(as(sample_matrix, "realRatingMatrix"), minRating=3), "matrix") * 1
 
 # replace nas with 0 (no adjusted cosine similarity)
 #wide_matrix[is.na(wide_matrix)] <- 0
 
 # ibcf, because columns are taken here
 # row count
-len <- dim(wide_matrix)[2]
-res <- diag(len)
 
-for(i in 1:len)
-{
-  for(j in 1:len)
-  {
-    if(i < j & i != j)
-    {
-      res[i,j] <- jaccard_sim(wide_matrix[,i], wide_matrix[,j])
-      res[j,i] <- res[i,j]
-    }
-  }
-}
+# len <- dim(sample_bin)[2]
+# res <- diag(len)
+# 
+# for(i in 1:len)
+# {
+#   for(j in 1:len)
+#   {
+#     if(i < j & i != j)
+#     {
+#       res[i,j] <- jaccard_sim(sample_bin[,i], sample_bin[,j])
+#       res[j,i] <- res[i,j]
+#     }
+#   }
+# }
+
+res <- jaccard_sim2(sample_bin, sample_bin)
+
 res[1:10, 1:10]
 
 #dim(wide_matrix)
@@ -767,8 +896,15 @@ res[1:10, 1:10]
 
 ```{r}
 levelplot(res)
+image(as(res, "realRatingMatrix"))
 ```
 
+
+top-n recommender
+
+```{r}
+
+```
 
 
 

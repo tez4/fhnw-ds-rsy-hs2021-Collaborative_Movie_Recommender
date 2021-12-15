@@ -554,13 +554,95 @@ ggplot(data=df_combined, aes(x=coverage, y=novelty, group=1)) +
 ***
 #### Wahl des optimalen Recommenders
 
+
+```{r}
+# evaluation scheme with k=10 (10 fold cross validation) and a rating split of 5
+
+eval_k <- 15
+given_n <- 15
+
+#scheme
+scheme <- evaluationScheme(train, method = "cross-validation", k = 10, given = given_n, goodRating = 5)
+
+algorithms <- list(
+  "popular items" = list(name="POPULAR", param=NULL),
+  "UBCF cosine" = list(name="UBCF", param=list(method = "cosine")),
+  "IBCF cosine" = list(name="IBCF", param=list(k = eval_k, method = "cosine")),
+  "IBCF pearson" = list(name="IBCF", param=list(k = eval_k, method = "pearson")),
+  "SVD approximation" = list(name="SVD", param=list(k = eval_k))
+)
+
+results <- evaluate(scheme, algorithms, type = "topNList", n=c(10, 15, 20, 25, 30))
+#results
+#plot(results, annotate=c(1,3), legend="bottomright")
+#plot(results, "prec/rec", annotate=3, legend="topleft")
+
+```
+
+### extract results for own plot
+
+```{r}
+
+prrc <- data.frame( model = "", precision = 0, recall = 0, n = 0)
+
+for (i in 1:length(avg(results)))
+{
+  model_result = avg(results)[[i]]
+  #print(model_result)
+  alg <- names(algorithms)[i]
+  for (j in 1:length(model_result[, 'precision']))
+  {
+    pr <- model_result[, 'precision'][j]
+    rc <- model_result[, 'recall'][j]
+    n <- ns[j]
+    prrc <- rbind(prrc, c(alg, pr, rc, n))
+  }
+}
+
+prrc <- prrc[-1,]
+#dtype conversion
+prrc[,2] <- as.numeric(prrc[,2])
+prrc[,3] <- as.numeric(prrc[,3])
+prrc[,4] <- as.numeric(prrc[,4])
+
+```
+
+
+```{r}
+
+ggplot(data=prrc, aes(x=recall, y=precision, color=model)) + 
+  geom_line() + 
+  geom_text(aes(label=n), vjust=-.2, hjust=-.0, show.legend = FALSE) +
+  labs(
+    title = "Precision vs Recall",
+    y = "Precision",
+    x = "Recall"
+  )
+
+```
+
+In dieser Grafik ist die precision dem recall der trainierten Modelle gegenübergestellt. Dabei wurde für jedes Modell für die in Zahlen angegebenen n-recommendations trainiert und dargestellt. Dabei wurde 10 fold cross validation angewandt. Nun stellt sich die Frage, ob precision, recall, oder beide Masse als wichitg empfunden werden. Precision ist umgekehrt proportional zu false positives, recall zu false negatives. Da es wichtiger ist, dass die gemachten Empfehlungen korrekt sind, nehme ich Precision als Performance Metrik.
+
+Das beste daraus resultierende Modell ist in dem Falle "popular items" mit n=10 Nachbaren.
+
+
+```{r}
+
+```
+
+
+
 ```{r}
 
 ns <- c(10, 15, 20, 25, 30)
 
 for (i in 1:length(ns)) 
 {
-  rec <- Recommender(train, method = "IBCF", param=list(method="Cosine", k=ns[i], normalize = NULL, na_as_zero = TRUE)) #normalize = 'center', 'Z-score'
+  rec <- Recommender(train, method = "IBCF", param=list(method="Cosine", k = ns[i], normalize = 'center', na_as_zero = TRUE))
+  #recom <- predict(rec, test, n=1)
+  
+  print(scheme)
+  break
 }
 
 ```
@@ -663,6 +745,10 @@ image(as(rec@model$sim, "realRatingMatrix"))
 
 ```
 
+```{r}
+
+```
+
 
 ```{r}
 
@@ -679,16 +765,17 @@ image(as(rec@model$sim, "realRatingMatrix"))
 
 
 # reduce samples to 100 users
-relevant <- movies %>% group_by(item) %>% sample_n(100, replace=TRUE)
+set.seed(123)
+sample_corr <- movies %>% group_by(item) %>% sample_n(100, replace=TRUE)
 #true_positives <- relevant %>% sum(rating >= threshold)
 #false_positives <- relevant %>% sum(rating < threshold)
 
-# remove testing observations from training set
-sample <- anti_join(movies, relevant,by=c('user','item'))
-sample <- as(sample, 'realRatingMatrix')
-sample_matrix <- as(sample, 'matrix')
+# convert dataframe back to realRatingMatrix
+sample_corr_df <- as(sample_corr, 'data.frame')
+# also generate matrix equivalent
+sample_corr_matrix <- as(sample_corr, 'matrix')
 
-sample
+sample_corr_df
 ```
 
 
@@ -723,8 +810,12 @@ jaccard_sim <- function(A, B)
 
 jaccard_sim2 <- function(A, B)
 {
-  inter = merge(A, t(B))
-  jac = inter / ((2 * length(A[,0])) - inter)
+  inter <- A %*% t(B)
+  B_rev <- (1 - B)
+  int_r <- ((1 - A) %*% t(1 - B))
+  nom <- dim(A)[2] - int_r
+  jac <- inter / nom
+  
   return (jac)
 }
 
@@ -782,23 +873,6 @@ cosine_sim_matrix[1:5, 1:5]
 ```
 
 cosine recommenderlab implementation
-
-```{r}
-as(sample_matrix, "realRatingMatrix")
-```
-
-```{r}
-as(train, "data.frame")
-```
-
-
-```{r}
-
-xy <- sample %>% pivot_longer(colnames(sample), names_to='item', values_to = 'rating')
-xy['user'] = 0
-xy
-
-```
 
 
 ```{r}
@@ -859,33 +933,12 @@ t(sample_bin[0:10, 0:10])
 ```
 
 ```{r}
-sample_bin[0:10, 0:10]
-```
-
-```{r}
-(1 * sample_bin)[0:10, 0:10]
-
-#as.numeric(sample_bin)
+sample_bin[1:10,1:5]
 ```
 
 
 ```{r}
-sample_bin[0:10, 0:10]
-```
-
-```{r}
-sample_bin[,4]
-```
-
-```{r}
-#inter <- merge(sample_bin[0:10, 0:10], sample_bin[0:10, 0:10])
-inter <- intersect(sample_bin[,4], sample_bin[,2])
-inter
-#jac -< inter / ((2 * length(A[,0])) - inter)
-```
-
-
-```{r}
+# binarize matrix and make split at a rating of 3
 sample_bin <- as(binarize(as(sample_matrix, "realRatingMatrix"), minRating=3), "matrix") * 1
 
 # replace nas with 0 (no adjusted cosine similarity)
@@ -909,25 +962,20 @@ sample_bin <- as(binarize(as(sample_matrix, "realRatingMatrix"), minRating=3), "
 #   }
 # }
 
-res <- jaccard_sim2(sample_bin, sample_bin)
+jac_own <- jaccard_sim2(sample_bin, sample_bin)
 
-res[1:10, 1:10]
+jac_own[1:10, 1:10]
 
 #dim(wide_matrix)
 
 ```
 
 ```{r}
-levelplot(res)
-image(as(res, "realRatingMatrix"))
+levelplot(jac_own)
+#image(as(jac_own, "realRatingMatrix"))
 ```
 
 
-top-n recommender
-
-```{r}
-
-```
 
 
 

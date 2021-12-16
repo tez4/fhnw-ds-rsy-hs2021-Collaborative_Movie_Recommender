@@ -466,6 +466,24 @@ ggplot(df, aes(x = colSum)) +
   theme_classic() +
   theme(text = element_text(size = 12)
   )
+
+ggplot(movies_sample_long_grouped, aes(x=rating, y = rating_dens)) + 
+  geom_col(fill = 'steelblue') +
+  scale_y_continuous(expand = c(0,0)) +
+  labs(
+    title = "Häufigkeit der Kundenbewertungen",
+    subtitle = "N = 943 Kunden",
+    x = "User Bewertung (1-5)", 
+    y = "Anzahl",
+    fill = element_blank()
+  ) +
+  scale_fill_manual("legend", values = c("cyan3", "cyan4", "darkolivegreen3", "darkolivegreen", "coral4")
+                    )+
+  theme_classic() + 
+  theme(
+    text = element_text(size = 12),
+    legend.position = 'bottom'
+  )
 ```
 
 ***
@@ -519,6 +537,246 @@ ggplot(data1, aes(x = mean_rating, fill = category)) +
   )
 ```
 Es fällt auf, dass die häufigsten Filme allgemein sehr gut bewertet werden.
+
+***
+##Analyse Top-N Listen . IBCF vs. UBCF
+####1.Berechne Top-15 Empfehlungen für Testkunden mit IBCF und UBCF,
+```{r}
+rec_ibcf <- Recommender(train, method = "IBCF", param=list(method="Cosine", k=30, normalize = NULL, na_as_zero = TRUE)) #normalize = 'center'
+
+# predict top 15 movies for 100 users
+topn_ibcf <- predict(rec_ibcf, test, n = 15)
+
+topn_ibcf_list <- as(topn_ibcf, "list")
+head(topn_ibcf_list, 3)
+
+print("------------------------")
+
+rec_ubcf <- Recommender(train, method = "UBCF", param=list(method="Cosine", normalize = NULL))
+
+topn_ubcf <- predict(rec_ubcf, test, n = 15)
+
+topn_ubcf_list <- as(topn_ubcf, "list")
+head(topn_ubcf_list, 3)
+```
+
+***
+####2.Vergleiche die Top-15 Empfehlungen und deren Verteilung und diskutiere Gemeinsamkeiten und Unterschiede zwischen IBCF und UBCF für alle Testkunden.
+```{r}
+#compare most occurring items
+print("most occurring items - IBCF")
+ibcf_top <- head(sort(colCounts(topn_ibcf), decreasing = TRUE))
+print(ibcf_top)
+
+print("----------------------------------------------")
+
+print("most occurring items - UBCF")
+ubcf_top <- head(sort(colCounts(topn_ubcf), decreasing = TRUE))
+ubcf_top
+```
+Auffällig ist, dass im UBCF die Filme, welche am häufigsten in den Top-15 Empfehlungen auftauchen, wesentlich üfters vorkommen als diese, die im IBCF als am meist vorkommende Filme definiert sind.
+
+```{r}
+#get distribution of intersect for each user
+#intersect of top 15 recommendations IBCF vs UBCF
+#list_comp_ibcf_ubcf <- vector(mode = "list", length = length(topn_ibcf_list))
+list_comp_ibcf_ubcf <- list()
+for (n in 1:length(topn_ibcf_list)) {
+  intersection <- length(intersect(unlist(topn_ibcf_list[n]), unlist(topn_ubcf_list[n]))) / 15
+  list_comp_ibcf_ubcf <- append(list_comp_ibcf_ubcf, intersection)
+}
+
+comp_ibcf_ubcf <- data.frame(matrix(unlist(list_comp_ibcf_ubcf), nrow=length(list_comp_ibcf_ubcf), byrow=TRUE))
+colnames(comp_ibcf_ubcf) <- c('intersect')
+comp_ibcf_ubcf
+
+ggplot(comp_ibcf_ubcf, aes(x = intersect)) +
+  geom_density(alpha = 1, fill = 'steelblue', bw = 4) +
+  labs(
+    title = "Verteilung der überschneidung der empfohlenen Filme",
+    # subtitle = paste("N = ", nrow(df3), " Filme"),
+    x = "Überschneidung in %", 
+    y = "Häufigkeit"
+  ) +
+  theme_classic() +
+  theme(text = element_text(size = 12)
+  )
+```
+
+
+
+***
+##Analyse Top-N Listen - Ratings
+####1.Vergleiche den Anteil übereinstimmender Empfehlungen der Top-15 Liste für IBCF vs UBCF, beide mit ordinalem Rating und Cosine Similarity für alle Testkunden
+```{r}
+a <- unlist(topn_ubcf_list[1])
+b <- unlist(topn_ibcf_list[1])
+
+#intersect(a, b)
+
+#intersect of top 15 recommendations IBCF vs UBCF cosine similarity
+comp_ord_cos<- 0
+for (n in 1:length(topn_ibcf_list)) {
+  intersection <- length(intersect(unlist(topn_ibcf_list[n]), unlist(topn_ubcf_list[n]))) / 15
+  comp_ord_cos <- comp_ord_cos + intersection
+}
+
+print('Anteil übereinstimmender Empfehlungen der Top-15 Liste: ' )
+comp_ord_cos / length(topn_ibcf_list)
+
+```
+
+
+
+***
+####2.Vergleiche den Anteil übereinstimmender Empfehlungen der Top-15 Liste für IBCF vs UBCF, beide mit binärem Rating und Jaccard Similarity für alle Testkunden
+```{r}
+#ibcf recommender with Jaccard similarity
+rec_ibcf_jac <- Recommender(train, method = "IBCF", param=list(method="Jaccard", k=30, normalize = NULL, na_as_zero = TRUE))
+topn_ibcf_jac <- predict(rec_ibcf_jac, test, n = 15)
+topn_ibcf_jac_list <- as(topn_ibcf_jac, "list")
+
+#ubcf recommender with Jaccard similarity
+rec_ubcf_jac <- Recommender(train, method = "UBCF", param=list(method="Jaccard", normalize = NULL))
+topn_ubcf_jac <- predict(rec_ubcf_jac, test, n = 15)
+topn_ubcf_jac_list <- as(topn_ubcf_jac, "list")
+
+#intersect of top 15 recommendations IBCF vs UBCF Jaccard similarity
+comp_bin_jac<- 0
+for (n in 1:length(topn_ibcf_jac_list)) {
+  intersection <- length(intersect(unlist(topn_ibcf_jac_list[n]), unlist(topn_ubcf_jac_list[n]))) / 15
+  comp_bin_jac <- comp_bin_jac + intersection
+}
+
+print('Anteil übereinstimmender Empfehlungen der Top-15 Liste: ' )
+comp_bin_jac / length(topn_ibcf_jac_list)
+```
+
+
+***
+####3.Vergleiche den Anteil übereinstimmender Empfehlungen der Top-15 Liste für UBCF mit ordinalem (Cosine Similarity) vs binärem Rating (Jaccard Similarity) für alle Testkunden.
+```{r}
+#intersect of top 15 recommendations UBCF Cosine Similarity vs UBCF Jaccard similarity
+comp_cos_jac<- 0
+for (n in 1:length(topn_ubcf_jac_list)) {
+  intersection <- length(intersect(unlist(topn_ubcf_jac_list[n]), unlist(topn_ubcf_list[n]))) / 15
+  comp_cos_jac <- comp_cos_jac + intersection
+}
+
+print('Anteil übereinstimmender Empfehlungen der Top-15 Liste: ')
+comp_cos_jac / length(topn_ubcf_jac_list)
+```
+
+
+***
+##Analyse Top-N Listen - IBCF vs SVD
+####1.Vergleiche wie sich der Anteil übereinstimmender Empfehlungen der Top-15 Liste für IBCF vs verschiedene SVD Modelle verändert, wenn die Anzahl der Singulärwerte für SVD von 10 auf 20, 30, 40, 50 verändert wird
+```{r}
+#annahme: k  anzahl singulärwerte
+#svd recommender 
+rec_svd_10 <- Recommender(train, method = "SVD", param=list(k=10 ))
+rec_svd_20 <- Recommender(train, method = "SVD", param=list(k=20 ))
+rec_svd_30 <- Recommender(train, method = "SVD", param=list(k=30 ))
+rec_svd_40 <- Recommender(train, method = "SVD", param=list(k=40 ))
+rec_svd_50 <- Recommender(train, method = "SVD", param=list(k=50 ))
+
+topn_svd_10 <- predict(rec_svd_10, test, n = 15)
+topn_svd_20 <- predict(rec_svd_20, test, n = 15)
+topn_svd_30 <- predict(rec_svd_30, test, n = 15)
+topn_svd_40 <- predict(rec_svd_40, test, n = 15)
+topn_svd_50 <- predict(rec_svd_50, test, n = 15)
+
+
+topn_svd_10_list <- as(topn_svd_10, "list")
+topn_svd_20_list <- as(topn_svd_20, "list")
+topn_svd_30_list <- as(topn_svd_30, "list")
+topn_svd_40_list <- as(topn_svd_40, "list")
+topn_svd_50_list <- as(topn_svd_50, "list")
+
+#intersect of top 15 recommendations UBCF Cosine Similarity vs SVD 10
+comp_ibcf_svd_10<- 0
+for (n in 1:length(topn_ibcf_list)) {
+  intersection <- length(intersect(unlist(topn_ibcf_list[n]), unlist(topn_svd_10_list[n]))) / 15
+  comp_ibcf_svd_10 <- comp_ibcf_svd_10 + intersection
+}
+print('Anteil übereinstimmender Empfehlungen der Top-15 Liste IBCF vs. SVD 10: ')
+comp_ibcf_svd_10 / length(topn_ibcf_list)
+
+#intersect of top 15 recommendations UBCF Cosine Similarity vs SVD 20
+comp_ibcf_svd_20<- 0
+for (n in 1:length(topn_ibcf_list)) {
+  intersection <- length(intersect(unlist(topn_ibcf_list[n]), unlist(topn_svd_20_list[n]))) / 15
+  comp_ibcf_svd_20 <- comp_ibcf_svd_20 + intersection
+}
+print('Anteil übereinstimmender Empfehlungen der Top-15 Liste IBCF vs. SVD 20: ')
+comp_ibcf_svd_20 / length(topn_ibcf_list)
+
+#intersect of top 15 recommendations UBCF Cosine Similarity vs SVD 30
+comp_ibcf_svd_30<- 0
+for (n in 1:length(topn_ibcf_list)) {
+  intersection <- length(intersect(unlist(topn_ibcf_list[n]), unlist(topn_svd_30_list[n]))) / 15
+  comp_ibcf_svd_30 <- comp_ibcf_svd_30 + intersection
+}
+print('Anteil übereinstimmender Empfehlungen der Top-15 Liste IBCF vs. SVD 30: ')
+comp_ibcf_svd_30 / length(topn_ibcf_list)
+
+
+#intersect of top 15 recommendations UBCF Cosine Similarity vs SVD 40
+comp_ibcf_svd_40<- 0
+for (n in 1:length(topn_ibcf_list)) {
+  intersection <- length(intersect(unlist(topn_ibcf_list[n]), unlist(topn_svd_40_list[n]))) / 15
+  comp_ibcf_svd_40 <- comp_ibcf_svd_40 + intersection
+}
+print('Anteil übereinstimmender Empfehlungen der Top-15 Liste IBCF vs. SVD 40: ')
+comp_ibcf_svd_40 / length(topn_ibcf_list)
+
+
+#intersect of top 15 recommendations UBCF Cosine Similarity vs SVD 50
+comp_ibcf_svd_50<- 0
+for (n in 1:length(topn_ibcf_list)) {
+  intersection <- length(intersect(unlist(topn_ibcf_list[n]), unlist(topn_svd_50_list[n]))) / 15
+  comp_ibcf_svd_50 <- comp_ibcf_svd_50 + intersection
+}
+print('Anteil übereinstimmender Empfehlungen der Top-15 Liste IBCF vs. SVD 50: ')
+comp_ibcf_svd_50 / length(topn_ibcf_list)
+
+```
+
+
+***
+##Wahl des optimalen Recommenders
+####1.Verwende für die Evaluierung 10-fache Kreuzvalidierung,
+```{r}
+
+```
+
+
+```{r}
+top10 <- as.list(df1)$item
+
+data <- as(ratingMatrix, "data.frame")
+data1 <- data %>%
+  group_by(item) %>%
+  summarize(mean_rating = mean(rating)) %>%
+  arrange(desc(mean_rating)) %>%
+  mutate(category = ifelse(item %in% top10, 'Häufigste 10 Filme', 'Restliche Filme'))
+
+ggplot(data1, aes(x = mean_rating, fill = category)) +
+  geom_density(alpha = 0.5, bw = 0.05) +
+  scale_y_continuous(expand = c(0,0)) +
+  scale_x_continuous(expand = c(0,0)) +
+  labs(
+    title = "Verteilung mittlere Kundenratings pro Film",
+    x = "Durchschnittliche Bewertung",
+    y = "Dichte",
+    fill = element_blank()
+  ) +
+  theme_classic() +
+  theme(
+    text = element_text(size = 12),
+    legend.position = c(.14, .93)
+  )
+```
 
 ***
 #### Implementierung Top-N Metriken

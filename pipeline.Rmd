@@ -168,7 +168,7 @@ ggplot(movies, aes(x = rating)) +
 ```
 In dieser Grafik ist die Verteilung der bewertungen zu sehen. Die Bewertungen 4 und 5 wirden klar am häufigsten vergeben, wobei 1 und 2 eher selten bewertet werden.
 
-```{r}
+```{r warning=FALSE}
 # get rating count per user, add as column for further processing
 counts <- movies %>% group_by(user) %>% count()
 movies2 <- merge(movies, counts, by="user")
@@ -759,6 +759,16 @@ results <- evaluate(scheme, algorithms, type = "topNList", n=c(10, 15, 20, 25, 3
 ### extract results for own plot
 
 ```{r}
+ns <- c(10, 15, 20, 25, 30)
+
+for (i in 1:length(ns)) 
+{
+  rec <- Recommender(train, method = "IBCF", param=list(method="Cosine", k = ns[i], normalize = 'center', na_as_zero = TRUE))
+  #recom <- predict(rec, test, n=1)
+  
+  print(scheme)
+  break
+}
 
 prrc <- data.frame( model = "", precision = 0, recall = 0, n = 0)
 
@@ -782,10 +792,6 @@ prrc[,2] <- as.numeric(prrc[,2])
 prrc[,3] <- as.numeric(prrc[,3])
 prrc[,4] <- as.numeric(prrc[,4])
 
-```
-
-
-```{r}
 
 ggplot(data=prrc, aes(x=recall, y=precision, color=model)) + 
   geom_line() + 
@@ -795,8 +801,8 @@ ggplot(data=prrc, aes(x=recall, y=precision, color=model)) +
     y = "Precision",
     x = "Recall"
   )
-
 ```
+
 TODO: pearson vs cosine bei UBCF
 TODO: Jaccard
 TODO: Given_N untersuchen
@@ -810,16 +816,7 @@ Das beste daraus resultierende Modell ist in dem Falle "popular items" mit n=10 
 
 ```{r}
 
-ns <- c(10, 15, 20, 25, 30)
 
-for (i in 1:length(ns)) 
-{
-  rec <- Recommender(train, method = "IBCF", param=list(method="Cosine", k = ns[i], normalize = 'center', na_as_zero = TRUE))
-  #recom <- predict(rec, test, n=1)
-  
-  print(scheme)
-  break
-}
 
 ```
 
@@ -850,6 +847,7 @@ Novelty: Mittel der Shannon Information der Popularität der Produkte in der Top
 ```{r}
 ggplot(data=df_combined, aes(x=coverage, y=novelty, group=1)) +
   geom_line() +
+  geom_text(aes(label=N), vjust=-.25, hjust=-.05, show.legend = FALSE) +
   labs(
     title = "Coverage gegenüber Novelty für verschiedene N",
     y = "Novelty",
@@ -857,7 +855,6 @@ ggplot(data=df_combined, aes(x=coverage, y=novelty, group=1)) +
   ) +
   theme(text = element_text(size = 12))
 ```
-TODO: N auf plot darstellen
 TODO: das ganze im selben plot für verschiedene reduktionen darstellen
 
 ***
@@ -869,12 +866,14 @@ rec <- Recommender(train, method = "IBCF", param=list(method="Cosine", k=30, nor
 df_user_genres_top_n <- create_df_user_genres_top_n(rec, genres)
 show_genre_fraction_plot(df_user_genres_top_n, df_user_genres_top_n$count_top_n, "Anteil Genres in Top-N Empfehlung von 20 zuf. Kunden")
 ```
+Auf diesem Plot ist die Unterschiedliche Verteilung der Genres in den Top-N Empfehlungen für die verschiedenen Kunden zu sehen. Es fällt auf, dass bei diesem Recommender durchaus verschiedenartige Verteilungen bei den Genres für die verschiednen Nutzer auftreten.
 
 #### Bestimme pro Kunde den Anteil nach Genres seiner Top-Filme (=Filme, welche vom Kunden die besten Bewertungen erhalten haben)
 ```{r}
 df_user_genres_best <- create_df_user_genres_best(movies, df_user_genres_top_n, genres)
 show_genre_fraction_plot(df_user_genres_best, df_user_genres_best$count_best, "Anteil Genres der bestbewerteten Filme von 20 zuf. Kunden")
 ```
+Auf diesem Plot ist die Unterschiedliche Verteilung der Genres bei den bestbewerteten Filmen für die verschiedenen Kunden zu sehen. Bestbewertet bedeutet in diesem Fall, dass die Bewertung eines Filmes mindestens 0.5 höher sein muss, als die Durchschnittliche Bewertung des Nutzers. Es fällt auf, dass bei den Top-N Empfehlungen allgemein Action zu wenig empfohlen wurde. Comedy hingegen wurde häufig zu viel empfohlen. Bei genauerem betrachten fällt auf, dass dieser Recommeder beispielsweise bei Kunde Nr. 38 auf die Genres bezogen sehr schlechte Empfehlungen macht.
 
 #### Vergleiche pro Kunde Top-Empfehlungen und Top-Filmen nach Genres
 ```{r fig.width = 7.5, fig.height = 6}
@@ -885,6 +884,8 @@ df_user_genres_top_n <- create_df_user_genres_top_n(rec, genres)
 df_user_genres <- create_df_user_genres(df_user_genres_top_n, df_user_genres_best)
 show_cleveland_dot_plot(df_user_genres, 'IBCF Recommender mit Cosine Similarity')
 ```
+Auf diesem Plot ist ersichtlich welche Genres der IBCF Recommender mit Cosine Similarity für die 20 Kunden eher zu wenig oder zu viel empfielt. Beispielsweise Comedy macht bei den bestbewerteten Filmen im Durchschnitt ungefähr 12% aus, erscheint in den Top-N Empfehlungen jedoch zu etwa 21%.
+
 
 ```{r fig.width = 7.5, fig.height = 6}
 rec <- Recommender(train, method = "UBCF", param=list(method="Jaccard", normalize = NULL))
@@ -919,11 +920,24 @@ df_user_genres_top_n <- create_df_user_genres_top_n(rec, genres)
 df_user_genres <- create_df_user_genres(df_user_genres_top_n, df_user_genres_best)
 compute_mean_absolute_percentage_error(df_user_genres, 'Popular Recommender')
 ```
-
-
-
-#### Definiere eine Qualitätsmetrik für Top-N Listen und teste sie
 abs(df1_drama - df2_drama) + abs(df1_actions - df2_action) + ...
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 
 ```{r}
 

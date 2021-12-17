@@ -225,7 +225,7 @@ df3 <- movies %>%
   )
 
 ggplot(df3, aes(x = mean_rating)) +
-  geom_density(alpha = 1, fill = 'steelblue', bw = 0.08) +
+  geom_histogram(alpha = 1, fill = 'steelblue', binwidth = 0.06) +
   scale_y_continuous(expand = c(0,0)) +
   scale_x_continuous(expand = c(0,0)) +
   labs(
@@ -435,7 +435,7 @@ df <- cbind(item = rownames(df), df)
 rownames(df) <- 1:nrow(df)
 
 ggplot(df, aes(x = colSum)) +
-  geom_density(alpha = 1, fill = 'steelblue', bw = 4) +
+  geom_histogram(alpha = 1, fill = 'steelblue', binwidth = 2) +
   scale_y_continuous(expand = c(0,0)) +
   scale_x_continuous(expand = c(0,0)) +
   labs(
@@ -861,21 +861,22 @@ TODO: N auf plot darstellen
 TODO: das ganze im selben plot für verschiedene reduktionen darstellen
 
 ***
-#### Implementierung Top-N Monitor
-###### Fixiere 20 zufällig gewählte Testkunden für alle Modellvergleiche
-###### Bestimme den Anteil der Top-N Empfehlung nach Genres pro Kunde
+## Implementierung Top-N Monitor
+#### Fixiere 20 zufällig gewählte Testkunden für alle Modellvergleiche
+#### Bestimme den Anteil der Top-N Empfehlung nach Genres pro Kunde
 ```{r}
 rec <- Recommender(train, method = "IBCF", param=list(method="Cosine", k=30, normalize = NULL, na_as_zero = TRUE))
 df_user_genres_top_n <- create_df_user_genres_top_n(rec, genres)
 show_genre_fraction_plot(df_user_genres_top_n, df_user_genres_top_n$count_top_n, "Anteil Genres in Top-N Empfehlung von 20 zuf. Kunden")
 ```
-###### Bestimme pro Kunde den Anteil nach Genres seiner Top-Filme (=Filme, 
-welche vom Kunden die besten Bewertungen erhalten haben)
+
+#### Bestimme pro Kunde den Anteil nach Genres seiner Top-Filme (=Filme, welche vom Kunden die besten Bewertungen erhalten haben)
 ```{r}
 df_user_genres_best <- create_df_user_genres_best(movies, df_user_genres_top_n, genres)
 show_genre_fraction_plot(df_user_genres_best, df_user_genres_best$count_best, "Anteil Genres der bestbewerteten Filme von 20 zuf. Kunden")
 ```
 
+#### Vergleiche pro Kunde Top-Empfehlungen und Top-Filmen nach Genres
 ```{r fig.width = 7.5, fig.height = 6}
 df_user_genres_best <- create_df_user_genres_best(movies, df_user_genres_top_n, genres)
 
@@ -884,12 +885,41 @@ df_user_genres_top_n <- create_df_user_genres_top_n(rec, genres)
 df_user_genres <- create_df_user_genres(df_user_genres_top_n, df_user_genres_best)
 show_cleveland_dot_plot(df_user_genres, 'IBCF Recommender mit Cosine Similarity')
 ```
+
 ```{r fig.width = 7.5, fig.height = 6}
-rec <- Recommender(train, method = "UBCF", param=list(method="Pearson", normalize = NULL))
+rec <- Recommender(train, method = "UBCF", param=list(method="Jaccard", normalize = NULL))
 df_user_genres_top_n <- create_df_user_genres_top_n(rec, genres)
 df_user_genres <- create_df_user_genres(df_user_genres_top_n, df_user_genres_best)
-show_cleveland_dot_plot(df_user_genres, 'UBCF Recommender mit Pearson Similarity')
+show_cleveland_dot_plot(df_user_genres, 'UBCF Recommender mit Jaccard Similarity')
 ```
+
+```{r fig.width = 7.5, fig.height = 6}
+rec <- Recommender(train, method = "POPULAR")
+df_user_genres_top_n <- create_df_user_genres_top_n(rec, genres)
+df_user_genres <- create_df_user_genres(df_user_genres_top_n, df_user_genres_best)
+show_cleveland_dot_plot(df_user_genres, 'Popular Recommender')
+```
+
+
+#### Definiere eine Qualitätsmetrik für Top-N Listen und teste sie
+```{r}
+rec <- Recommender(train, method = "IBCF", param=list(method="Cosine", k=30, normalize = NULL, na_as_zero = TRUE))
+df_user_genres_top_n <- create_df_user_genres_top_n(rec, genres)
+df_user_genres <- create_df_user_genres(df_user_genres_top_n, df_user_genres_best)
+compute_mean_absolute_percentage_error(df_user_genres, 'IBCF Recommender mit Cosine Similarity')
+
+rec <- Recommender(train, method = "UBCF", param=list(method="Jaccard", normalize = NULL))
+df_user_genres_top_n <- create_df_user_genres_top_n(rec, genres)
+df_user_genres <- create_df_user_genres(df_user_genres_top_n, df_user_genres_best)
+compute_mean_absolute_percentage_error(df_user_genres, 'UBCF Recommender mit Jaccard Similarity')
+
+
+rec <- Recommender(train, method = "POPULAR")
+df_user_genres_top_n <- create_df_user_genres_top_n(rec, genres)
+df_user_genres <- create_df_user_genres(df_user_genres_top_n, df_user_genres_best)
+compute_mean_absolute_percentage_error(df_user_genres, 'Popular Recommender')
+```
+
 
 
 #### Definiere eine Qualitätsmetrik für Top-N Listen und teste sie

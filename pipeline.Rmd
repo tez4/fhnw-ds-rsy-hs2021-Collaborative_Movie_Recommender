@@ -904,24 +904,46 @@ show_cleveland_dot_plot(df_user_genres, 'Popular Recommender')
 
 #### Definiere eine Qualitätsmetrik für Top-N Listen und teste sie
 ```{r}
-rec <- Recommender(train, method = "IBCF", param=list(method="Cosine", k=30, normalize = NULL, na_as_zero = TRUE))
-df_user_genres_top_n <- create_df_user_genres_top_n(rec, genres)
-df_user_genres <- create_df_user_genres(df_user_genres_top_n, df_user_genres_best)
-compute_mean_absolute_percentage_error(df_user_genres, 'IBCF Recommender mit Cosine Similarity')
 
-rec <- Recommender(train, method = "UBCF", param=list(method="Jaccard", normalize = NULL))
-df_user_genres_top_n <- create_df_user_genres_top_n(rec, genres)
-df_user_genres <- create_df_user_genres(df_user_genres_top_n, df_user_genres_best)
-compute_mean_absolute_percentage_error(df_user_genres, 'UBCF Recommender mit Jaccard Similarity')
+algorithms <- list(
+  "IBCF cosine" = list(name="IBCF", param=list(k = 30, method = "cosine", normalize = NULL, na_as_zero = TRUE), desc = 'IBCF Recommender mit Cosine Similarity'),
+  "UBCF Jaccard" = list(name="UBCF", param=list(method = "jaccard"), desc = 'UBCF Recommender mit Jaccard Similarity'),
+  "Popular" = list(name="POPULAR", param=NULL, desc = 'Popular Recommender')
+)
+
+errors <- vector()
+algos <- vector()
+for (algo in algorithms) {
+  rec <- Recommender(train, method = algo$name, param=algo$param)
+  df_user_genres_top_n <- create_df_user_genres_top_n(rec, genres)
+  df_user_genres <- create_df_user_genres(df_user_genres_top_n, df_user_genres_best)
+  error <- compute_mean_absolute_percentage_error(df_user_genres)
+  algos <- c(algos, algo$desc)
+  errors <- c(errors, error)
+}
+
+df_error <- data.frame(description = algos, error = errors)
 
 
-rec <- Recommender(train, method = "POPULAR")
-df_user_genres_top_n <- create_df_user_genres_top_n(rec, genres)
-df_user_genres <- create_df_user_genres(df_user_genres_top_n, df_user_genres_best)
-compute_mean_absolute_percentage_error(df_user_genres, 'Popular Recommender')
+ggplot(df_error, aes(x=description, y = error)) + 
+  geom_col(fill = 'steelblue') +
+  coord_flip() +
+  scale_y_continuous(expand = c(0,0)) +
+  labs(
+    title = "Mittlerer absoluter prozentualer Fehler der \nGenre-Anteile in den Top-N Empfehlungen",
+    x = element_blank(), 
+    y = "Mittlerer absoluter prozentualer Fehler",
+    fill = element_blank()
+  ) +
+  scale_fill_manual("legend", values = c("cyan3", "cyan4", "darkolivegreen3", "darkolivegreen", "coral4")
+                    )+
+  theme_classic() + 
+  theme(
+    text = element_text(size = 12),
+    legend.position = 'bottom'
+  )
 ```
 abs(df1_drama - df2_drama) + abs(df1_actions - df2_action) + ...
-
 
 
 

@@ -304,9 +304,8 @@ show_cleveland_dot_plot <- function(df, subtitle) {
 }
 
 
-compute_mean_absolute_percentage_error <- function(df_user_genres, recommender_desc) {
+compute_mean_absolute_percentage_error <- function(df_user_genres) {
   df_user_genres_wide <- spread(df_user_genres, key = list, value = count) %>% transmute(count_diff = abs(count_best - count_top_n))
-  print(recommender_desc)
-  print(paste0(paste('Mittlerer absoluter prozentualer Fehler der Genre-Anteile in den Top-N Empfehlungen:', round(mean(df_user_genres_wide$count_diff), 3)),'%'))
-  print('')
+  
+  return(round(mean(df_user_genres_wide$count_diff), 3))
 }

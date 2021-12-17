@@ -880,20 +880,22 @@ for (i in 1:length(reco_list)) {
 }
 
 # get group size of recommended genres of all 80 users
-df_user_genres <- inner_join(df_recommendations, df_genres, by = 'item') %>% group_by(user, genres) %>% summarise(count = n())
+df_user_genres <- inner_join(df_recommendations, df_genres, by = 'item') %>% group_by(user, genres) %>% summarise(count_top_n = n())
 
 # select our users
 set.seed(42)
-users <- df_user_genres %>% group_by(user) %>% summarise(x = sum(count)) %>% sample_n(20) %>% select(user)
+users <- df_user_genres %>% group_by(user) %>% summarise(x = sum(count_top_n)) %>% sample_n(20) %>% select(user)
 df_user_genres <- inner_join(df_user_genres, users, by = 'user')
 df_user_genres <- df_user_genres %>% arrange('user')
-df_user_genres
+df_user_genres_top_n <- df_user_genres
+total <- df_user_genres_top_n %>% group_by(user) %>% summarise(total = sum(count_top_n))
+df_user_genres_top_n <- left_join(df_user_genres_top_n, total, by = 'user') %>% mutate(count_top_n = count_top_n / total) %>% select(-total)
 
 # create plot
 colourCount = length(unique(df_user_genres$genres))
 getPalette = colorRampPalette(brewer.pal(9, "Paired"))
 
-ggplot(data=df_user_genres, aes(y=user, x=count, fill=genres)) +
+ggplot(data=df_user_genres, aes(y=user, x=count_top_n, fill=genres)) +
   geom_col(position = 'fill') +
   scale_y_discrete(expand = c(0,0)) +
   scale_x_continuous(expand = c(0,0)) +
@@ -918,14 +920,16 @@ df_all <- inner_join(movies, users, by = 'user')
 df_best <- df_all %>% group_by(user) %>% summarise(mean_rating = mean(rating))
 df_best <- inner_join(df_all, df_best, by = 'user')
 df_best <- df_best %>% filter(rating > mean_rating + 0.5)
-df_user_genres <- inner_join(df_best, df_genres, by = 'item') %>% group_by(user, genres) %>% summarise(count = n())
-df_user_genres
+df_user_genres <- inner_join(df_best, df_genres, by = 'item') %>% group_by(user, genres) %>% summarise(count_best = n())
+df_user_genres_best <- df_user_genres
+total <- df_user_genres_best %>% group_by(user) %>% summarise(total = sum(count_best))
+df_user_genres_best <- left_join(df_user_genres_best, total, by = 'user') %>% mutate(count_best = count_best / total) %>% select(-total)
 
 # create plot
 colourCount = length(unique(df_user_genres$genres))
 getPalette = colorRampPalette(brewer.pal(9, "Paired"))
 
-ggplot(data=df_user_genres, aes(y=user, x=count, fill=genres)) +
+ggplot(data=df_user_genres, aes(y=user, x=count_best, fill=genres)) +
   geom_col(position = 'fill') +
   scale_y_discrete(expand = c(0,0)) +
   scale_x_continuous(expand = c(0,0)) +
@@ -944,6 +948,35 @@ ggplot(data=df_user_genres, aes(y=user, x=count, fill=genres)) +
   )
 ```
 TODO: cleveland oder spider plot
+
+```{r}
+df_user_genres <- full_join(df_user_genres_top_n, df_user_genres_best, by = c('user','genres'))
+df_user_genres <- df_user_genres %>% replace(is.na(.), 0)
+df_user_genres <- gather(df_user_genres, list, count, c(count_top_n, count_best))
+df_user_genres <- df_user_genres %>% group_by(genres, list) %>% summarise(count  = mean(count))
+df_user_genres
+```
+
+```{r}
+ggplot(df_user_genres, aes(genres, count)) +
+  scale_color_discrete(labels = c("bestbewertete Filme", "Top-N Empfehlungen")) +
+  coord_flip() +
+  geom_line() +
+  geom_point(aes(color = list)) +
+  theme_minimal() +
+  labs(
+    title = "Anteil Genres der bestbewerteten Filme gegenüber \nden Top-N Empfehlungen",
+    x = element_blank(),
+    y = "Anteil",
+    color = element_blank(),
+  ) +
+  theme(
+    text = element_text(size = 12),
+    legend.position = 'bottom'
+  )
+
+```
+
 
 #### Definiere eine Qualitätsmetrik für Top-N Listen und teste sie
 abs(df1_drama - df2_drama) + abs(df1_actions - df2_action) + ...

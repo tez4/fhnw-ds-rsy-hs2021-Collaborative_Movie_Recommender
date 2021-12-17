@@ -68,6 +68,8 @@ ggplot(df_1, aes(y = reorder(item, +mean_rating), x = mean_rating)) +
   )
 
 ```
+TODO: beschreiben was das bringt
+
 
 ***
 #### 1. Welches sind die am häufigsten geschauten Genres / Filme?
@@ -138,6 +140,8 @@ df1b%>%
         text = element_text(size = 12) # text size
   )
 ```
+TODO: Anzahl hinzufügen
+
 Auch hier wird davon ausgegangen, dass die enres, welche am häufigsten bewertet wurden auch am häufigst geschaut wurden. In der Grafik ist zu sehen, dass Drama das top Genres ist, gefolgt von Comedy und Action.
 
 ***
@@ -258,53 +262,12 @@ Für diese Grafik wurden die Filme in zwei gruppen unterteilt: Filme die weniger
 ```{r}
 # Number of ratings per user per rating value
 movies_sample_long_grouped <- movies_sample_long %>% group_by(user, rating) %>% summarise(rating_dens = length(user) / first(n), user = first(user), n=first(n), rating = first(rating))
-movies_sample_long_grouped
-movies_sample_long
-
-ggplot(movies_sample_long_grouped, aes(x=rating, y = rating_dens, fill=user)) + 
-  geom_col(position=position_dodge()) +
-  scale_y_continuous(expand = c(0,0)) +
-  scale_x_continuous(expand = c(0,0)) +
-  labs(
-    title = "Streuung Kundenbewertungen für zufällig gewählte Kunden",
-    subtitle = "N = 5 Kunden",
-    x = "User Bewertung (1-5)", 
-    y = "Ausprägung Rating",
-    fill = element_blank()
-  ) +
-  scale_fill_manual("legend", values = c("cyan3", "cyan4", "darkolivegreen3", "darkolivegreen", "coral4")
-                    )+
-  theme_classic() + 
-  theme(
-    text = element_text(size = 12),
-    legend.position = 'bottom'
-  )
-
 ```
-In dieser Grafik sehen wir, wie sich die Bewertungen einzelner Kunden verteilen. Auffallend ist generell, dass die Bewertungen 1 und 2 weniger oft abgegeben wurde als 3 und 4. 
-Bei der Verteilung der ratings sind von User zu User Unterschiede feststellbar. User 24 bewertet beispielsweise viel besser als User 639. Dies könnte bedeuten, dass User 24 nur Filme bewertet oder schaut die er/sie mag, oder grundsätzlich höhere Bewertungen abgibt. Leider sehen wir hier weniger gut, welche Tendenzen die Streuung der Rating aller User aufweisen.
-
 ```{r}
 movies_span <- movies %>% group_by(user) %>% 
   summarize(mean = mean(rating), min = min(rating), max = max(rating), span = (max(rating) - min(rating)))
 
 set.seed(123)
-
-ggplot(sample_n(movies_span, 20), aes(x=user)) +
-  geom_point(colour="black", aes(y=mean), shape=21) +
-  geom_errorbar(aes(ymin=min, ymax=max)) +
-  labs(
-    title = "Spannweite Kundenratings ",
-    subtitle = "N = 20 Kunden",
-    x = "User ID", 
-    y = "Rating Range"
-  )+
-    theme_classic() + 
-  theme(
-    text = element_text(size = 12),
-    legend.position = 'bottom'
-  )
-
 
 ggplot(movies_span, aes(x=user)) +
   geom_bar(aes(span), fill = 'steelblue') +
@@ -322,6 +285,8 @@ ggplot(movies_span, aes(x=user)) +
   )
   
 ```
+TODO: Anzahl
+
 0In diesen Grafiken sehen wir detailliertere Informationen über die Spannweite und den Mittelpunkt. In der ersten Übersicht ist die Spannweite und der Mittelpunkt einzelner Kunden dargestellt. Es fällt auf, dass trotz des teilweise relativ hohem Mittelwert alle Ratings von 1-5 abgegeben wurden. Ein rating von 5 wurde sozusagen immer abgegeben, 1 nicht immer.
 In der zweiten Übersicht ist die Spannweite aller Kunden dargestellt. Hier wird sichtbar, dass die meisten Kunden Bewertungen von 1-5 abgegeben haben (Spannweite=4), und nur weinige sehr homogen bewertet haben (Spannweite = 1-2). Eine kleine Spannweite kann hier auch aufgetreten sein, da diese User sehr wenige Bewertungen abgegeben haben.
 
@@ -348,6 +313,8 @@ ggplot(movies_sample_long_grouped, aes(x=rating, y = rating_dens)) +
     legend.position = 'bottom'
   )
 ```
+TODO: ANzahl RAtings, N = Anzahl Ratings
+
 ```{r}
 MovNorm <- normalize(MovieLense, method="Z-score")
 mov <- as(MovNorm, "data.frame")
@@ -371,6 +338,8 @@ ggplot(mov, aes(x=rating)) +
     legend.position = 'bottom'
   )
 ```
+TODO: N = Anzahl Ratings
+
 Die Ratings sind nun ungefähr Normalverteilt mit einem Durchschnittsrating von 0 und einer Standardabweichung von 1. 
 Erkennbar ist, dass die Verteilung rechtssteil und linksschief ist, also mehrheitlich positive Bewertungen abgegeben wurden. 
 Durch die Normierung der Daten werden die Ratings jedes Users auf dieselbe Verteilung gestaucht, wodurch man die Verteilung aller Daten analysieren kann. Dadurch hat man beispielsweise die Möglichkeit die durchschnittliche Bewertungstendenz herauszufinden. 
@@ -379,14 +348,15 @@ Durch die Normierung der Daten werden die Ratings jedes Users auf dieselbe Verte
 #### 6.Welche strukturellen Charakteristika (z.B. Sparsity) und Auffälligkeiten zeigt die User Item Matrix?
 ```{r}
 image(MovieLense, main = "Raw Ratings")
-
-MovieLenseNorm <- normalize(MovieLense, method="Z-score")
-image(MovieLenseNorm, main = "Normalized Ratings")
+# MovieLenseNorm <- normalize(MovieLense, method="Z-score")
 ```
 Users mit tiefen ID's und Filme mit hohen ID's weisen weniger ratings auf. Filme mit tiefer ID jedoch sehr viele.
 Auffallend ist, dass es einige wenige User gibt, die fast alle Filme bewertet haben (erkennbar durch die horizontalen scharzen Striche). Dies scheinen sehr aktive Bewerter zu sein.
 Viele Users haben jedoch nur einen kleinen Teil der Filme bewertet.
 Bei den Filmen ist eine ähnliche Tendenz wahrzunehmen, jedoch sind die vertikalen Striche breiter. Möglicherweise sind dort einige beliebte Filme zusammengefasst.
+
+TODO: Sparcity anzeigen
+TODO: Colorbar entfernen
 
 ***
 ## Datenreduktion
@@ -398,14 +368,22 @@ ratingMatrix
 ```{r}
 show_sparsity_change(MovieLense, ratingMatrix)
 ```
+TODO: Zwei mehr datenreduktiuonen hinzufügen (1x Random, 1x Users with most ratings, but Movies random)
+TODO: Bessere namen für Matrizen
+TODO: Als plot darstellen
+
 ```{r}
 image(ratingMatrix, main = "Raw Ratings")
 ```
 Man sieht sehr klar, dass die matrix nun deutlich weniger sparse ist.
 
+TODO: Plot für verschiedene Datenreduktionen
+
 ```{r}
 show_change_of_rating_distribution(MovieLense, ratingMatrix)
 ```
+TODO: N von plot anpassen (auch N für b) darstellen)
+TODO: Plot für verschiedene Datenreduktionen
 
 ***
 ## Analyse Ähnlichkeitsmatrix
@@ -467,30 +445,30 @@ ggplot(df, aes(x = colSum)) +
   theme(text = element_text(size = 12)
   )
 
-ggplot(movies_sample_long_grouped, aes(x=rating, y = rating_dens)) + 
-  geom_col(fill = 'steelblue') +
-  scale_y_continuous(expand = c(0,0)) +
-  labs(
-    title = "Häufigkeit der Kundenbewertungen",
-    subtitle = "N = 943 Kunden",
-    x = "User Bewertung (1-5)", 
-    y = "Anzahl",
-    fill = element_blank()
-  ) +
-  scale_fill_manual("legend", values = c("cyan3", "cyan4", "darkolivegreen3", "darkolivegreen", "coral4")
-                    )+
-  theme_classic() + 
-  theme(
-    text = element_text(size = 12),
-    legend.position = 'bottom'
-  )
+# ggplot(movies_sample_long_grouped, aes(x=rating, y = rating_dens)) + 
+#   geom_col(fill = 'steelblue') +
+#   scale_y_continuous(expand = c(0,0)) +
+#   labs(
+#     title = "Häufigkeit der Kundenbewertungen",
+#     subtitle = "N = 943 Kunden",
+#     x = "User Bewertung (1-5)", 
+#     y = "Anzahl",
+#     fill = element_blank()
+#   ) +
+#   scale_fill_manual("legend", values = c("cyan3", "cyan4", "darkolivegreen3", "darkolivegreen", "coral4")
+#                     )+
+#   theme_classic() + 
+#   theme(
+#     text = element_text(size = 12),
+#     legend.position = 'bottom'
+#   )
 ```
+TODO: gute beschreibung
 
 ***
 #### 4. Bestimme die Filme, die am häufigsten in der Cosine-Ähnlichkeitsmatrix auftauchen und analysiere deren Vorkommen und Ratings im reduzierten Datensatz
 ```{r}
 df1 <- df %>% arrange(desc(colSum)) %>% head(10)
-df1
 
 ggplot(df1, aes(x = colSum, y = reorder(item, +colSum)))+
   geom_col(alpha = 1, fill = 'steelblue')+
@@ -539,8 +517,8 @@ ggplot(data1, aes(x = mean_rating, fill = category)) +
 Es fällt auf, dass die häufigsten Filme allgemein sehr gut bewertet werden.
 
 ***
-##Analyse Top-N Listen . IBCF vs. UBCF
-####1.Berechne Top-15 Empfehlungen für Testkunden mit IBCF und UBCF,
+##Analyse Top-N Listen - IBCF vs. UBCF
+####1.Berechne Top-15 Empfehlungen für Testkunden mit IBCF und UBCF
 ```{r}
 rec_ibcf <- Recommender(train, method = "IBCF", param=list(method="Cosine", k=30, normalize = NULL, na_as_zero = TRUE)) #normalize = 'center'
 
@@ -548,16 +526,16 @@ rec_ibcf <- Recommender(train, method = "IBCF", param=list(method="Cosine", k=30
 topn_ibcf <- predict(rec_ibcf, test, n = 15)
 
 topn_ibcf_list <- as(topn_ibcf, "list")
-head(topn_ibcf_list, 3)
+#head(topn_ibcf_list, 3)
 
-print("------------------------")
+#print("------------------------")
 
 rec_ubcf <- Recommender(train, method = "UBCF", param=list(method="Cosine", normalize = NULL))
 
 topn_ubcf <- predict(rec_ubcf, test, n = 15)
 
 topn_ubcf_list <- as(topn_ubcf, "list")
-head(topn_ubcf_list, 3)
+#head(topn_ubcf_list, 3)
 ```
 
 ***
@@ -574,6 +552,8 @@ print("most occurring items - UBCF")
 ubcf_top <- head(sort(colCounts(topn_ubcf), decreasing = TRUE))
 ubcf_top
 ```
+TODO: darstellung als balkendiagramm
+
 Auffällig ist, dass im UBCF die Filme, welche am häufigsten in den Top-15 Empfehlungen auftauchen, wesentlich üfters vorkommen als diese, die im IBCF als am meist vorkommende Filme definiert sind.
 
 ```{r}
@@ -591,7 +571,7 @@ colnames(comp_ibcf_ubcf) <- c('intersect')
 comp_ibcf_ubcf
 
 ggplot(comp_ibcf_ubcf, aes(x = intersect)) +
-  geom_density(alpha = 1, fill = 'steelblue', bw = 4) +
+  geom_histogram(alpha = 1, fill = 'steelblue', bins = 4) +
   labs(
     title = "Verteilung der überschneidung der empfohlenen Filme",
     # subtitle = paste("N = ", nrow(df3), " Filme"),
@@ -602,12 +582,12 @@ ggplot(comp_ibcf_ubcf, aes(x = intersect)) +
   theme(text = element_text(size = 12)
   )
 ```
-
+TODO: scale_continuous,.... (Plot bis zum rand)
 
 
 ***
-##Analyse Top-N Listen - Ratings
-####1.Vergleiche den Anteil übereinstimmender Empfehlungen der Top-15 Liste für IBCF vs UBCF, beide mit ordinalem Rating und Cosine Similarity für alle Testkunden
+## Analyse Top-N Listen - Ratings
+#### Vergleiche den Anteil übereinstimmender Empfehlungen der Top-15 Liste für IBCF vs UBCF, beide mit ordinalem Rating und Cosine Similarity für alle Testkunden
 ```{r}
 a <- unlist(topn_ubcf_list[1])
 b <- unlist(topn_ibcf_list[1])
@@ -629,7 +609,7 @@ comp_ord_cos / length(topn_ibcf_list)
 
 
 ***
-####2.Vergleiche den Anteil übereinstimmender Empfehlungen der Top-15 Liste für IBCF vs UBCF, beide mit binärem Rating und Jaccard Similarity für alle Testkunden
+#### Vergleiche den Anteil übereinstimmender Empfehlungen der Top-15 Liste für IBCF vs UBCF, beide mit binärem Rating und Jaccard Similarity für alle Testkunden
 ```{r}
 #ibcf recommender with Jaccard similarity
 rec_ibcf_jac <- Recommender(train, method = "IBCF", param=list(method="Jaccard", k=30, normalize = NULL, na_as_zero = TRUE))
@@ -666,7 +646,7 @@ for (n in 1:length(topn_ubcf_jac_list)) {
 print('Anteil übereinstimmender Empfehlungen der Top-15 Liste: ')
 comp_cos_jac / length(topn_ubcf_jac_list)
 ```
-
+TODO: balkendiagramm mit verschiedenen Anteilen
 
 ***
 ##Analyse Top-N Listen - IBCF vs SVD
@@ -741,77 +721,13 @@ print('Anteil übereinstimmender Empfehlungen der Top-15 Liste IBCF vs. SVD 50: 
 comp_ibcf_svd_50 / length(topn_ibcf_list)
 
 ```
-
-
-***
-##Wahl des optimalen Recommenders
-####1.Verwende für die Evaluierung 10-fache Kreuzvalidierung,
-```{r}
-
-```
-
-
-```{r}
-top10 <- as.list(df1)$item
-
-data <- as(ratingMatrix, "data.frame")
-data1 <- data %>%
-  group_by(item) %>%
-  summarize(mean_rating = mean(rating)) %>%
-  arrange(desc(mean_rating)) %>%
-  mutate(category = ifelse(item %in% top10, 'Häufigste 10 Filme', 'Restliche Filme'))
-
-ggplot(data1, aes(x = mean_rating, fill = category)) +
-  geom_density(alpha = 0.5, bw = 0.05) +
-  scale_y_continuous(expand = c(0,0)) +
-  scale_x_continuous(expand = c(0,0)) +
-  labs(
-    title = "Verteilung mittlere Kundenratings pro Film",
-    x = "Durchschnittliche Bewertung",
-    y = "Dichte",
-    fill = element_blank()
-  ) +
-  theme_classic() +
-  theme(
-    text = element_text(size = 12),
-    legend.position = c(.14, .93)
-  )
-```
+TODO: in for-loop
+TODO: Als df speichern
+TODO: balkendiagramm mit verschiedenen Anteilen
 
 ***
-#### Implementierung Top-N Metriken
-```{r}
-show_precision(c(5,10,15,20,25,30), ratingMatrix, 0)
-```
-
-***
-#### Catalog coverage and System-level novelty
-```{r}
-rec <- Recommender(train, method = "IBCF", param=list(method="Cosine", k=30, normalize = NULL, na_as_zero = TRUE)) #normalize = 'center', 'Z-score'
-
-df_coverage <- show_coverage(c(5,10,15,20,25,30), rec)
-df_novelty <- show_novelty(c(5,10,15,20,25,30), rec)
-
-df_combined <- inner_join(df_coverage, df_novelty, by = 'N')
-df_combined
-```
-Coverage: Summe aller unterschiedlichen Produkte, welche in den Top-N Listen aller Kund*Innen ingesamt auftauchen dividiert durch die Menge aller Produkte.
-Novelty: Mittel der Shannon Information der Popularität der Produkte in der Top-N Liste gemittelt über alle Kund*Innen. 
-
-```{r}
-ggplot(data=df_combined, aes(x=coverage, y=novelty, group=1)) +
-  geom_line() +
-  labs(
-    title = "Coverage gegenüber Novelty für verschiedene N",
-    y = "Novelty",
-    x = "Coverage"
-  ) +
-  theme(text = element_text(size = 12))
-```
-
-***
-#### Wahl des optimalen Recommenders
-
+## Wahl des optimalen Recommenders
+#### Verwende für die Evaluierung 10-fache Kreuzvalidierung,
 
 ```{r}
 # evaluation scheme with k=10 (10 fold cross validation) and a rating split of 5
@@ -820,7 +736,7 @@ eval_k <- 15
 given_n <- 15
 
 #scheme
-scheme <- evaluationScheme(train, method = "cross-validation", k = 10, given = given_n, goodRating = 5)
+scheme <- evaluationScheme(train, method = "cross-validation", k = 10, given = given_n, goodRating = 3)
 
 algorithms <- list(
   "popular items" = list(name="POPULAR", param=NULL),
@@ -878,17 +794,16 @@ ggplot(data=prrc, aes(x=recall, y=precision, color=model)) +
   )
 
 ```
+TODO: pearson vs cosine bei UBCF
+TODO: Jaccard
+TODO: Given_N untersuchen
+TODO: Precision vs. Novelty plotten (Recall ist weniger wichtig)
+TODO: grid search?
+TODO: F1 performance metrik anschauen
 
 In dieser Grafik ist die precision dem recall der trainierten Modelle gegenübergestellt. Dabei wurde für jedes Modell für die in Zahlen angegebenen n-recommendations trainiert und dargestellt. Dabei wurde 10 fold cross validation angewandt. Nun stellt sich die Frage, ob precision, recall, oder beide Masse als wichitg empfunden werden. Precision ist umgekehrt proportional zu false positives, recall zu false negatives. Da es wichtiger ist, dass die gemachten Empfehlungen korrekt sind, nehme ich Precision als Performance Metrik.
 
 Das beste daraus resultierende Modell ist in dem Falle "popular items" mit n=10 Nachbaren.
-
-
-```{r}
-
-```
-
-
 
 ```{r}
 
@@ -905,8 +820,42 @@ for (i in 1:length(ns))
 
 ```
 
+***
+## Implementierung Ähnlichkeitsmatrix
 
+```{r}
 
+```
+
+TODO: alles hier hin verschieben
+
+***
+## Implementierung Top-N Metriken
+#### Catalog coverage and System-level novelty
+```{r}
+rec <- Recommender(train, method = "IBCF", param=list(method="Cosine", k=30, normalize = NULL, na_as_zero = TRUE)) #normalize = 'center', 'Z-score'
+
+df_coverage <- show_coverage(c(5,10,15,20,25,30), rec)
+df_novelty <- show_novelty(c(5,10,15,20,25,30), rec)
+
+df_combined <- inner_join(df_coverage, df_novelty, by = 'N')
+df_combined
+```
+Coverage: Summe aller unterschiedlichen Produkte, welche in den Top-N Listen aller Kund*Innen ingesamt auftauchen dividiert durch die Menge aller Produkte.
+Novelty: Mittel der Shannon Information der Popularität der Produkte in der Top-N Liste gemittelt über alle Kund*Innen. 
+
+```{r}
+ggplot(data=df_combined, aes(x=coverage, y=novelty, group=1)) +
+  geom_line() +
+  labs(
+    title = "Coverage gegenüber Novelty für verschiedene N",
+    y = "Novelty",
+    x = "Coverage"
+  ) +
+  theme(text = element_text(size = 12))
+```
+TODO: N auf plot darstellen
+TODO: das ganze im selben plot für verschiedene reduktionen darstellen
 
 ***
 #### Implementierung Top-N Monitor
@@ -994,7 +943,10 @@ ggplot(data=df_user_genres, aes(y=user, x=count, fill=genres)) +
       text = element_text(size = 12) # text size
   )
 ```
+TODO: cleveland oder spider plot
 
+#### Definiere eine Qualitätsmetrik für Top-N Listen und teste sie
+abs(df1_drama - df2_drama) + abs(df1_actions - df2_action) + ...
 
 ```{r}
 

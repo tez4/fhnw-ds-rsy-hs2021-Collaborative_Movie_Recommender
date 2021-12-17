@@ -1,3 +1,6 @@
+# ------------------- Explorative Datenanalyse ---------------------------
+
+
 data_reduction_dense <- function(ratingMatrix) {
   # convert into df
   data <- as(ratingMatrix, "data.frame")

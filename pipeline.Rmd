@@ -732,103 +732,201 @@ TODO: balkendiagramm mit verschiedenen Anteilen
 ## Wahl des optimalen Recommenders
 #### Verwende für die Evaluierung 10-fache Kreuzvalidierung,
 
-```{r}
-# evaluation scheme with k=10 (10 fold cross validation) and a rating split of 5
-
-eval_k <- 15
-given_n <- 15
-
-#scheme
-scheme <- evaluationScheme(train, method = "cross-validation", k = 10, given = given_n, goodRating = 3)
-
-algorithms <- list(
-  "popular items" = list(name="POPULAR", param=NULL),
-  "UBCF cosine" = list(name="UBCF", param=list(method = "cosine")),
-  "IBCF cosine" = list(name="IBCF", param=list(k = eval_k, method = "cosine")),
-  "IBCF pearson 30" = list(name="IBCF", param=list(k = 30, method = "pearson")),
-  "IBCF pearson 90" = list(name="IBCF", param=list(k = 90, method = "pearson")),
-  "SVD approximation" = list(name="SVD", param=list(k = eval_k))
-)
-
-results <- evaluate(scheme, algorithms, type = "topNList", n=c(10, 15, 20, 25, 30))
-#results
-#plot(results, annotate=c(1,3), legend="bottomright")
-#plot(results, "prec/rec", annotate=3, legend="topleft")
-
+```{r echo=FALSE, cache=FALSE, results=FALSE, comment=FALSE, warning=FALSE, message=FALSE}
+evaluate_model()
 ```
 
-### extract results for own plot
-
-```{r}
-ns <- c(10, 15, 20, 25, 30)
-
-for (i in 1:length(ns)) 
-{
-  rec <- Recommender(train, method = "IBCF", param=list(method="Cosine", k = ns[i], normalize = 'center', na_as_zero = TRUE))
-  #recom <- predict(rec, test, n=1)
-  
-  print(scheme)
-  break
-}
-
-prrc <- data.frame( model = "", precision = 0, recall = 0, n = 0)
-
-for (i in 1:length(avg(results)))
-{
-  model_result = avg(results)[[i]]
-  #print(model_result)
-  alg <- names(algorithms)[i]
-  for (j in 1:length(model_result[, 'precision']))
-  {
-    pr <- model_result[, 'precision'][j]
-    rc <- model_result[, 'recall'][j]
-    n <- ns[j]
-    prrc <- rbind(prrc, c(alg, pr, rc, n))
-  }
-}
-
-prrc <- prrc[-1,]
-#dtype conversion
-prrc[,2] <- as.numeric(prrc[,2])
-prrc[,3] <- as.numeric(prrc[,3])
-prrc[,4] <- as.numeric(prrc[,4])
 
 
-ggplot(data=prrc, aes(x=recall, y=precision, color=model)) + 
-  geom_line() + 
-  geom_text(aes(label=n), vjust=-.2, hjust=-.0, show.legend = FALSE) +
-  labs(
-    title = "Precision vs Recall",
-    y = "Precision",
-    x = "Recall"
-  )
-```
+Als erstes stellte sich die Frage, ob precision, recall, oder ein kombinierter F1-Score als performance Metrik gewählt werden sollte. Precision ist umgekehrt proportional zu false positive, recall zu false negative Voraussagen. Da es in diesem Fall wichtiger ist, die gemachten Empfehlungen korrekt vorauszusagen, wurde Precision als Performance Metrik definiert. Als zweite Wahl würden wir auf den F1-Score zurückggreifen. Dieser setzt sich aus der Kombination beider Petriken precision und recall zusammen.
 
-TODO: pearson vs cosine bei UBCF
-TODO: Jaccard
-TODO: Given_N untersuchen
-TODO: Precision vs. Novelty plotten (Recall ist weniger wichtig)
-TODO: grid search?
-TODO: F1 performance metrik anschauen
+Der Parameter goodRating stellt die binäre Grenze dar, bei welcher ein rating als "positiv" bezeichnet werden kann. Wird der Wert höher gesetzt, sinkt die precision und der recall steigt. In dieser Modelloptimierung wurde definiert, dass alle Ratings ab 3 als positiv klassiert werden sollten.
 
-In dieser Grafik ist die precision dem recall der trainierten Modelle gegenübergestellt. Dabei wurde für jedes Modell für die in Zahlen angegebenen n-recommendations trainiert und dargestellt. Dabei wurde 10 fold cross validation angewandt. Nun stellt sich die Frage, ob precision, recall, oder beide Masse als wichitg empfunden werden. Precision ist umgekehrt proportional zu false positives, recall zu false negatives. Da es wichtiger ist, dass die gemachten Empfehlungen korrekt sind, nehme ich Precision als Performance Metrik.
+In dieser Grafik ist die precision der novelty der trainierten Modelle gegenübergestellt. Dabei wurde jedes Modell für n-recommendations trainiert und dargestellt. Es wurde 10 fold cross validation verwendet. Die dargestellten Werte visualisieren das arithmetische Mittel der Scores auf den jeweils 10 Testdatensätzen. Dadurch können die Modelle und Parameter unabhängig von der Struktur der Daten miteinander verglichen werden.
 
-Das beste daraus resultierende Modell ist in dem Falle "popular items" mit n=10 Nachbaren.
+Als erstes wurde sichtbar, dass die Modellwahl mehr Einfluss auf die precision des Modell hatte als die n-recommendations. Deshalb wurde nur SVD und popular für weitere Hyperparameteroptimierung angeschaut.
+
+Das SVD Modell wurde hier für verschiedene k's trainiert. Dabei wurde klar, dass ein k~5 die beste precision voraussagt. Jedoch kommt das Modell nicht annähernd an die precision von popular heran.
+
+Das beste daraus resultierende Modell ist in dem Falle "popular items" mit n=10 Voraussagen.
+
+
+
+Das popular Modell besitzt keine Hyperparameter für die Optimierung.
+Deshalb wird hier SVD bezüglich Hyperparameter k und n im Detail optimiert.
 
 ```{r}
 
-
+hyper_param_svd(seq(from=2, to=10, by=1))
 
 ```
+
+Für das Modell SVD ist die Precision am besten, wenn k=4 ist und n=10. 
+Zudem wurde festgestellt, dass je nach Seed Position k=5 besser sein kann.
+Die precision des Modells mit optimierten Hyperparameter ist immernoch tiefer, als die des popular Modells.
+
 
 ***
 ## Implementierung Ähnlichkeitsmatrix
 
+Als erstes wird hier ein sample aus 100 zufällig gewähten Filmen gezogen.
+
+
+
 ```{r}
+
+#image(as(similarity(train, method = "Cosine", which = "items"), "matrix"))
+
+# plotSimilarityMatrix(train, y = NULL, clusLabels = NULL, colX = NULL, colY = NULL, myLegend = NULL, fileName = "posteriorSimilarityMatrix", savePNG = FALSE, semiSupervised = FALSE, showObsNames = FALSE, clr = FALSE, clc = FALSE, plotWidth = 500, plotHeight = 450)
+
+#dim(as.matrix(subset(movies_wider, select = -c(user))))
+
+#sample <- movies_wider[, colnames(movies_wider) != 'user']
+#sample <- sample[, sample(ncol(sample), size=100)]
+
+#sample_matrix <- as.matrix
+
+
+# reduce samples to 100 users
+set.seed(123)
+
+mov_sample <- sample(unique(movies$item), size=100)
+
+sample_sim <- movies %>% filter(item %in% mov_sample)
+
+# TODO outer join with users to get nas
+
+length(unique(sample_sim$item))
+#true_positives <- relevant %>% sum(rating >= threshold)
+#false_positives <- relevant %>% sum(rating < threshold)
+
+# generate matrix equivalent
+sample_sim_matrix <- as(sample_sim, 'matrix')
+# convert back to real rating matrix
+sample_sim_rating <- as(sample_sim, "realRatingMatrix")
+
+# wide version
+# breite version des dataframe erstellen
+sample_sim_wide <- pivot_wider(
+  sample_sim,
+  id_cols = user,
+  names_from = item,
+  values_from = rating,
+  values_fill = NULL,
+)
+
+sample_sim_wide
+```
+
+
+```{r}
+
+rec <- Recommender(sample_sim_rating, method = "IBCF", param=list(method="Cosine", k=100, normalize = NULL, na_as_zero = TRUE)) #normalize = 'center'
+similarity <- as.matrix(rec@model$sim)
+#image(similarity)
+image(rec@model$sim)
 
 ```
 
-TODO: alles hier hin verschieben
+
+```{r}
+
+# replace nas with 0 (non adjusted cosine similarity)
+sample_sim_zero <- sample_sim_wide
+sample_sim_zero[is.na(sample_sim_zero)] <- 0
+
+# ibcf, because columns are taken here
+
+cosine_sim_matrix <- cosine_sim2(t(sample_sim_zero), t(sample_sim_zero))
+
+dim(cosine_sim_matrix)
+cosine_sim_matrix[1:5, 1:5]
+
+```
+
+Hier wurde die cosine similarity als Matrix Berechnung implementiert.
+
+cosine recommenderlab implementation
+
+
+
+```{r}
+#cosine_sim(wide_matrix[,1], wide_matrix[,2])
+#wide_matrix[2,1]
+#as.matrix(subset(movies_wider, select = -c(user)))[,2]
+
+#image(as(res, "matrix"))
+image(as(cosine_sim_matrix, "realRatingMatrix"))
+#as(df_test, 'realRatingMatrix')
+#ggplot(df_res, aes(x = x_variable, y = y_variable)) + stat_density2d(aes(fill = ..density..), contour = F, geom = 'tile')
+
+```
+
+Compare matrix similarity with implementations in recommenderlab
+
+```{r}
+#max(abs(Matrix(cosine_sim_matrix) - mymatrix))
+```
+
+
+
+```{r}
+
+rownames(cosine_sim_matrix) <- c()
+colnames(cosine_sim_matrix) <- c()
+
+levelplot(cosine_sim_matrix)
+```
+
+```{r}
+
+xy <- as(rec@model$sim, "matrix")
+rownames(xy) <- c()
+colnames(xy) <- c()
+
+len <- length(xy)
+levelplot(xy)
+
+```
+
+
+```{r}
+# binarize matrix and make split at a rating of 3
+sample_bin <- as(binarize(as(sample_sim_matrix, "realRatingMatrix"), minRating=3), "matrix") * 1
+
+# replace nas with 0 (no adjusted cosine similarity)
+#wide_matrix[is.na(wide_matrix)] <- 0
+
+# ibcf, because columns are taken here
+# row count
+
+
+
+jac_own <- jaccard_sim2(sample_bin, sample_bin)
+
+jac_own[1:10, 1:10]
+
+#dim(wide_matrix)
+
+```
+
+```{r}
+levelplot(jac_own[1:20, 1:20])
+#image(as(jac_own, "realRatingMatrix"))
+```
+
+
+
+
+
+
+
+
+
+
+
+
+
 
 ***
 ## Implementierung Top-N Metriken
@@ -948,246 +1046,6 @@ abs(df1_drama - df2_drama) + abs(df1_actions - df2_action) + ...
 
 
 
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-```{r}
-
-image(as(rec@model$sim, "realRatingMatrix"))
-#similarity
-
-```
-
-
-
-```{r}
-
-#image(as(similarity(train, method = "Cosine", which = "items"), "matrix"))
-
-# plotSimilarityMatrix(train, y = NULL, clusLabels = NULL, colX = NULL, colY = NULL, myLegend = NULL, fileName = "posteriorSimilarityMatrix", savePNG = FALSE, semiSupervised = FALSE, showObsNames = FALSE, clr = FALSE, clc = FALSE, plotWidth = 500, plotHeight = 450)
-
-#dim(as.matrix(subset(movies_wider, select = -c(user))))
-
-#sample <- movies_wider[, colnames(movies_wider) != 'user']
-#sample <- sample[, sample(ncol(sample), size=100)]
-
-#sample_matrix <- as.matrix
-
-
-# reduce samples to 100 users
-set.seed(123)
-sample_corr <- movies %>% group_by(item) %>% summarize(mean(rating)) %>% sample_n(100, replace=TRUE)
-#true_positives <- relevant %>% sum(rating >= threshold)
-#false_positives <- relevant %>% sum(rating < threshold)
-
-# convert dataframe back to realRatingMatrix
-sample_corr_df <- as(sample_corr, 'data.frame')
-# also generate matrix equivalent
-sample_corr_matrix <- as(sample_corr, 'matrix')
-
-sample_corr_df
-```
-
-
-
-```{r}
-
-cosine_sim <- function(A, B)
-{
-  similarity <- A %*% B / (norm(A, type="2") * norm(B, type="2"))
-  return(similarity)
-}
-
-cosine_sim2 <- function(A, B)
-{
-  zae <- A %*% t(B)
-  nen1 <- A %*% t(A)
-  nen2 <- B %*% t(B)
-  nen <- sqrt(diag(nen1) %*% t(diag(nen2)))
-  print(dim(zae))
-  print(dim(nen))
-  similarity <- zae / nen
-  return(similarity)
-}
-
-jaccard_sim <- function(A, B)
-{
-  inter = length(intersect(A, B))
-  union = length(A) + length(B) - inter
-  jac = inter / union
-  return (jac)
-}
-
-jaccard_sim2 <- function(A, B)
-{
-  inter <- A %*% t(B)
-  B_rev <- (1 - B)
-  int_r <- ((1 - A) %*% t(1 - B))
-  nom <- dim(A)[2] - int_r
-  jac <- inter / nom
-  
-  return (jac)
-}
-
-
-A <- c(5, 3, 2, 1)
-B <- c(1, 2, 3, 4)
-
-cosine_sim(A, B)
-jaccard_sim(A, B)
-#library(lsa)
-#cosine(A, B)
-
-```
-
-
-```{r}
-# normalize=null, na_as_zero=true
-similarity <- as.matrix(rec@model$sim)
-dim(similarity)
-image(rec@model$sim)
-
-```
-
-cosine diy implementation
-
-
-```{r}
-
-# replace nas with 0 (no adjusted cosine similarity)
-sample_matrix_zero <- sample_matrix
-sample_matrix_zero[is.na(sample_matrix_zero)] <- 0
-
-# ibcf, because columns are taken here
-# row count
-#len <- dim(wide_matrix)[2]
-#res <- diag(len)
-
-#for(i in 1:len)
-#{
-#  for(j in 1:len)
-#  {
-#    if(i < j & i != j)
-#    {
-#      res[i,j] <- cosine_sim(wide_matrix[,i], wide_matrix[,j])
-#      res[j,i] <- res[i,j]
-#    }
-#  }
-#}
-
-cosine_sim_matrix <- cosine_sim2(t(sample_matrix_zero), t(sample_matrix_zero))
-
-dim(cosine_sim_matrix)
-cosine_sim_matrix[1:5, 1:5]
-
-```
-
-cosine recommenderlab implementation
-
-
-```{r}
-
-rec <- Recommender(as(train, "realRatingMatrix"), method = "IBCF", param=list(method="Cosine", k=100, normalize = NULL, na_as_zero = TRUE))
-#image(rec@model$sim)
-rec_df <- as(rec@model$sim, 'data.frame')
-
-levelplot(rec_df)
-
-```
-
-
-
-```{r}
-#cosine_sim(wide_matrix[,1], wide_matrix[,2])
-#wide_matrix[2,1]
-#as.matrix(subset(movies_wider, select = -c(user)))[,2]
-
-cosine_sim <- as.data.frame(cosine_sim_matrix)
-dim(df_res)
-#image(as(res, "matrix"))
-image(as(res, "realRatingMatrix"))
-#as(df_test, 'realRatingMatrix')
-#ggplot(df_res, aes(x = x_variable, y = y_variable)) + stat_density2d(aes(fill = ..density..), contour = F, geom = 'tile')
-
-```
-
-Compare matrix similarity with implementations in recommenderlab
-
-```{r}
-max(abs(Matrix(newmatrix) - mymatrix))
-```
-
-
-
-```{r}
-
-rownames(res) <- c()
-colnames(res) <- c()
-
-levelplot(res)
-```
-
-
-```{r}
-
-xy <- as(rec@model$sim, "matrix")
-rownames(xy) <- c()
-colnames(xy) <- c()
-
-len <- length(xy)
-levelplot(xy[len-10:len-1, len-10:len-1])
-
-```
-
-
-```{r}
-# binarize matrix and make split at a rating of 3
-sample_bin <- as(binarize(as(sample_matrix, "realRatingMatrix"), minRating=3), "matrix") * 1
-
-# replace nas with 0 (no adjusted cosine similarity)
-#wide_matrix[is.na(wide_matrix)] <- 0
-
-# ibcf, because columns are taken here
-# row count
-
-# len <- dim(sample_bin)[2]
-# res <- diag(len)
-# 
-# for(i in 1:len)
-# {
-#   for(j in 1:len)
-#   {
-#     if(i < j & i != j)
-#     {
-#       res[i,j] <- jaccard_sim(sample_bin[,i], sample_bin[,j])
-#       res[j,i] <- res[i,j]
-#     }
-#   }
-# }
-
-jac_own <- jaccard_sim2(sample_bin, sample_bin)
-
-jac_own[1:10, 1:10]
-
-#dim(wide_matrix)
-
-```
-
-```{r}
-levelplot(jac_own[1:10, 1:10])
-#image(as(jac_own, "realRatingMatrix"))
-```
 
 
 

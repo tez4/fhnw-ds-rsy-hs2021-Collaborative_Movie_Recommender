@@ -199,6 +199,240 @@ split_dataset <- function(ratingMatrix, trainSize) {
   return(list(train, test))
 }
 
+# ------------------- Datenreduktion ---------------------------
+
+
+
+# ------------------- Analyse Ähnlichkeitsmatrix ---------------------------
+
+
+
+# ------------------- Analyse Top-N-Listen - IBCF vs UBCF ---------------------------
+
+
+
+# ------------------- Analyse Top-N-Listen - Ratings ---------------------------
+
+
+
+# ------------------- Analyse Top-N-Listen - IBCF vs SVD ---------------------------
+
+
+
+
+# ------------------- Wahl des optimalen Recommenders ---------------------------
+
+evaluate_model <- function()
+{
+  set.seed(123)
+  # evaluation scheme with k=10 (10 fold cross validation) and a rating split of 5
+  eval_k <- 15
+  given_n <- 15
+  good_rating <- 3
+  
+  #scheme
+  scheme <- evaluationScheme(train, method = "cross-validation", k = 10, given = given_n, goodRating = good_rating)
+  
+  algorithms <- list(
+    "popular items" = list(name="POPULAR", param=NULL),
+    "UBCF cosine" = list(name="UBCF", param=list(method = "cosine")),
+    "UBCF pearson" = list(name="UBCF", param=list(method = "pearson")),
+    "IBCF cosine" = list(name="IBCF", param=list(k = eval_k, method = "cosine")),
+    "IBCF jaccard" = list(name="IBCF", param=list(k = eval_k, method = "jaccard")),
+    "IBCF pearson" = list(name="IBCF", param=list(k = eval_k, method = "pearson")),
+    "SVD k=15" = list(name="SVD", param=list(k = eval_k)),
+    "SVD k=40" = list(name="SVD", param=list(k = 40)),
+    "SVD k=5" = list(name="SVD", param=list(k = 5)),
+    "SVD k=2" = list(name="SVD", param=list(k = 2))
+  )
+  
+  results <- evaluate(scheme, algorithms, type = "topNList", n=c(10, 15, 20, 25, 30))
+  #results
+  #plot(results, annotate=c(1,3), legend="bottomright")
+  #plot(results, "prec/rec", annotate=3, legend="topleft")
+  
+  
+  # extract results for own plot
+  ns <- c(10, 15, 20, 25, 30)
+  
+  for (i in 1:length(ns)) 
+  {
+    rec <- Recommender(train, method = "IBCF", param=list(method="Cosine", k = ns[i], normalize = 'center', na_as_zero = TRUE))
+    #recom <- predict(rec, test, n=1)
+    
+    print(scheme)
+    break
+  }
+  
+  prrc <- data.frame(model = "", precision = 0, recall = 0, n = 0)
+  
+  for (i in 1:length(avg(results)))
+  {
+    model_result = avg(results)[[i]]
+    #print(model_result)
+    alg <- names(algorithms)[i]
+    for (j in 1:length(model_result[, 'precision']))
+    {
+      pr <- model_result[, 'precision'][j]
+      rc <- model_result[, 'recall'][j]
+      n <- ns[j]
+      prrc <- rbind(prrc, c(alg, pr, rc, n))
+    }
+  }
+  
+  prrc <- prrc[-1,]
+  
+  #dtype conversion
+  for(i in 2:dim(prrc)[2])
+  {
+    prrc[,i] <- as.numeric(prrc[,i])
+  }
+
+  ggplot(data=prrc, aes(x=recall, y=precision, color=model)) + 
+    geom_line() + 
+    geom_text(aes(label=n), vjust=-.2, hjust=-.0, show.legend = FALSE) +
+    labs(
+      title = paste0("Precision vs Recall, goodRating=", good_rating),
+      y = "Precision",
+      x = "Recall"
+    )
+}
+
+hyper_param_svd <- function(seq)
+{
+  set.seed(123)
+  
+  eval_k <- 15
+  given_n <- 15
+  good_rating <- 3
+  
+  #scheme
+  scheme <- evaluationScheme(train, method = "cross-validation", k = 10, given = given_n, goodRating = good_rating)
+  
+  algorithms <- list()
+  for(i in seq)
+  {
+    name <- paste0("SVD k=", i)
+    #algorithms <- c(algorithms, assign(name, list(list(name="SVD", param=list(k = i)))))
+    algorithms[name] <- list(list(name="SVD", param=list(k = i)))
+  }
+  
+  
+  
+  results <- evaluate(scheme, algorithms, type = "topNList", n=c(10, 15, 20, 25, 30))
+  
+  prrc <- data.frame(model = "", precision = 0, recall = 0, n = 0)
+  
+  for (i in 1:length(avg(results)))
+  {
+    model_result = avg(results)[[i]]
+    #print(model_result)
+    alg <- names(algorithms)[i]
+    for (j in 1:length(model_result[, 'precision']))
+    {
+      pr <- model_result[, 'precision'][j]
+      rc <- model_result[, 'recall'][j]
+      n <- ns[j]
+      prrc <- rbind(prrc, c(alg, pr, rc, n))
+    }
+  }
+  
+  prrc <- prrc[-1,]
+  
+  #dtype conversion
+  for(i in 2:dim(prrc)[2])
+  {
+    prrc[,i] <- as.numeric(prrc[,i])
+  }
+  
+  
+  
+  ggplot(data=prrc, aes(x=recall, y=precision, color=model)) + 
+    geom_jitter() + 
+    geom_text(aes(label=n), vjust=-.0, hjust=-.2, show.legend = FALSE) +
+    labs(
+      title = paste0("Precision vs Recall, goodRating=", good_rating),
+      y = "Precision",
+      x = "Recall"
+    )
+}
+
+
+# ------------------- Implementierung Ähnlichkeitsmatrix ---------------------------
+
+
+
+cosine_sim <- function(A, B)
+{
+  #len <- dim(wide_matrix)[2]
+  #res <- diag(len)
+  #for(i in 1:len)
+  #{
+  #  for(j in 1:len)
+  #  {
+  #    if(i < j & i != j)
+  #    {
+  #      res[i,j] <- cosine_sim(wide_matrix[,i], wide_matrix[,j])
+  #      res[j,i] <- res[i,j]
+  #    }
+  #  }
+  #}
+  similarity <- A %*% B / (norm(A, type="2") * norm(B, type="2"))
+  return(similarity)
+}
+
+cosine_sim2 <- function(A, B)
+{
+  zae <- A %*% t(B)
+  nen1 <- A %*% t(A)
+  nen2 <- B %*% t(B)
+  nen <- sqrt(diag(nen1) %*% t(diag(nen2)))
+  print(dim(zae))
+  print(dim(nen))
+  similarity <- zae / nen
+  return(similarity)
+}
+
+jaccard_sim <- function(A, B)
+{
+  # len <- dim(sample_bin)[2]
+  # res <- diag(len)
+  # for(i in 1:len)
+  # {
+  #   for(j in 1:len)
+  #   {
+  #     if(i < j & i != j)
+  #     {
+  #       res[i,j] <- jaccard_sim(sample_bin[,i], sample_bin[,j])
+  #       res[j,i] <- res[i,j]
+  #     }
+  #   }
+  # }
+  
+  inter = length(intersect(A, B))
+  union = length(A) + length(B) - inter
+  jac = inter / union
+  return (jac)
+}
+
+jaccard_sim2 <- function(A, B)
+{
+  inter <- A %*% t(B)
+  B_rev <- (1 - B)
+  int_r <- ((1 - A) %*% t(1 - B))
+  nom <- dim(A)[2] - int_r
+  jac <- inter / nom
+  
+  return (jac)
+}
+
+
+
+# ------------------- Implementierung Top-N Metriken ---------------------------
+
+
+
+
 # -----------------------Implementierung Top-N Monitor----------------------------------
   
 create_df_user_genres_top_n <- function(recommender, df_genres) {

@@ -9,7 +9,7 @@ R-Version: **[Default] [32-bit] C:\\Program Files\\R\\R-4.1.0**
 
 ```{r echo=FALSE, cache=FALSE, results=FALSE, comment=FALSE, warning=FALSE}
 # nötige Packete
-packages <- c("tidyverse", "data.table", "lubridate", "ggplot2", "ggthemes", "recommenderlab", "knitr", 'pals', 'RColorBrewer')
+packages <- c("tidyverse", "data.table", "lubridate", "ggplot2", "ggthemes", "recommenderlab", "knitr", 'pals', 'RColorBrewer', 'lattice')
 
 # Noch nicht installierte Pakete installieren
 installed_packages <- packages %in% rownames(installed.packages())
@@ -820,13 +820,14 @@ eval_k <- 15
 given_n <- 15
 
 #scheme
-scheme <- evaluationScheme(train, method = "cross-validation", k = 10, given = given_n, goodRating = 5)
+scheme <- evaluationScheme(train, method = "cross-validation", k = 10, given = given_n, goodRating = 4)
 
 algorithms <- list(
   "popular items" = list(name="POPULAR", param=NULL),
   "UBCF cosine" = list(name="UBCF", param=list(method = "cosine")),
   "IBCF cosine" = list(name="IBCF", param=list(k = eval_k, method = "cosine")),
-  "IBCF pearson" = list(name="IBCF", param=list(k = eval_k, method = "pearson")),
+  "IBCF pearson 30" = list(name="IBCF", param=list(k = 30, method = "pearson")),
+  "IBCF pearson 90" = list(name="IBCF", param=list(k = 90, method = "pearson")),
   "SVD approximation" = list(name="SVD", param=list(k = eval_k))
 )
 
@@ -884,9 +885,6 @@ In dieser Grafik ist die precision dem recall der trainierten Modelle gegenüber
 Das beste daraus resultierende Modell ist in dem Falle "popular items" mit n=10 Nachbaren.
 
 
-```{r}
-
-```
 
 
 
@@ -904,7 +902,6 @@ for (i in 1:length(ns))
 }
 
 ```
-
 
 
 
@@ -1003,9 +1000,6 @@ image(as(rec@model$sim, "realRatingMatrix"))
 
 ```
 
-```{r}
-
-```
 
 
 ```{r}
@@ -1024,7 +1018,7 @@ image(as(rec@model$sim, "realRatingMatrix"))
 
 # reduce samples to 100 users
 set.seed(123)
-sample_corr <- movies %>% group_by(item) %>% sample_n(100, replace=TRUE)
+sample_corr <- movies %>% group_by(item) %>% summarize(mean(rating)) %>% sample_n(100, replace=TRUE)
 #true_positives <- relevant %>% sum(rating >= threshold)
 #false_positives <- relevant %>% sum(rating < threshold)
 
@@ -1090,7 +1084,7 @@ jaccard_sim(A, B)
 
 
 ```{r}
-
+# normalize=null, na_as_zero=true
 similarity <- as.matrix(rec@model$sim)
 dim(similarity)
 image(rec@model$sim)
@@ -1136,7 +1130,10 @@ cosine recommenderlab implementation
 ```{r}
 
 rec <- Recommender(as(train, "realRatingMatrix"), method = "IBCF", param=list(method="Cosine", k=100, normalize = NULL, na_as_zero = TRUE))
-image(rec@model$sim)
+#image(rec@model$sim)
+rec_df <- as(rec@model$sim, 'data.frame')
+
+levelplot(rec_df)
 
 ```
 
@@ -1165,13 +1162,10 @@ max(abs(Matrix(newmatrix) - mymatrix))
 
 
 ```{r}
-#ggplot(df_res, aes(x=V1, y=V2) ) +
-#  geom_bin2d() +
-#  theme_bw()
+
 rownames(res) <- c()
 colnames(res) <- c()
 
-require(lattice)
 levelplot(res)
 ```
 
@@ -1182,16 +1176,9 @@ xy <- as(rec@model$sim, "matrix")
 rownames(xy) <- c()
 colnames(xy) <- c()
 
-levelplot(xy)
+len <- length(xy)
+levelplot(xy[len-10:len-1, len-10:len-1])
 
-```
-
-```{r}
-t(sample_bin[0:10, 0:10])
-```
-
-```{r}
-sample_bin[1:10,1:5]
 ```
 
 
@@ -1229,7 +1216,7 @@ jac_own[1:10, 1:10]
 ```
 
 ```{r}
-levelplot(jac_own)
+levelplot(jac_own[1:10, 1:10])
 #image(as(jac_own, "realRatingMatrix"))
 ```
 

@@ -1,3 +1,6 @@
+# ------------------- Explorative Datenanalyse ---------------------------
+
+
 data_reduction_dense <- function(ratingMatrix) {
   # convert into df
   data <- as(ratingMatrix, "data.frame")
@@ -194,4 +197,115 @@ split_dataset <- function(ratingMatrix, trainSize) {
   test <- as(df_test, 'realRatingMatrix')
   
   return(list(train, test))
+}
+
+# -----------------------Implementierung Top-N Monitor----------------------------------
+  
+create_df_user_genres_top_n <- function(recommender, df_genres) {
+  # create data frame with genres
+  df_genres <- df_genres %>% group_by(item, genres) %>% summarise(mean(rating))
+  
+  # make predictions and create list with them
+  pre <- predict(recommender, test, n = 20)
+  reco_list <- as(pre, "list")
+  
+  # create data frame of top n recommendations
+  df_recommendations <- data.frame(matrix(ncol=2,nrow=0, dimnames=list(NULL, c("user", "item"))))
+  
+  for (i in 1:length(reco_list)) {
+    for (j in 1:length(reco_list[[i]])) {
+      df_recommendations[nrow(df_recommendations) + 1,] = c(names(reco_list[i]),reco_list[[i]][j])
+    }
+  }
+  
+  # get group size of recommended genres of all 80 users
+  df_user_genres <- inner_join(df_recommendations, df_genres, by = 'item') %>% group_by(user, genres) %>% summarise(count_top_n = n())
+  
+  # select our users
+  set.seed(42)
+  users <- df_user_genres %>% group_by(user) %>% summarise(x = sum(count_top_n)) %>% sample_n(20) %>% select(user)
+  df_user_genres <- inner_join(df_user_genres, users, by = 'user')
+  df_user_genres <- df_user_genres %>% arrange('user')
+  df_user_genres_top_n <- df_user_genres
+  total <- df_user_genres_top_n %>% group_by(user) %>% summarise(total = sum(count_top_n))
+  df_user_genres_top_n <- left_join(df_user_genres_top_n, total, by = 'user') %>% mutate(count_top_n = count_top_n / total * 100) %>% select(-total)
+  
+  return (df_user_genres_top_n)
+}
+
+
+create_df_user_genres_best <- function(movies, df_user_genres_top_n, df_genres) {
+  users <- df_user_genres_top_n %>% group_by(user) %>% summarise(x = sum(count_top_n)) %>% select(user)
+  df_genres <- df_genres %>% group_by(item, genres) %>% summarise(mean(rating))
+  df_all <- inner_join(movies, users, by = 'user')
+  df_best <- df_all %>% group_by(user) %>% summarise(mean_rating = mean(rating))
+  df_best <- inner_join(df_all, df_best, by = 'user')
+  df_best <- df_best %>% filter(rating > mean_rating + 0.5)
+  df_user_genres <- inner_join(df_best, df_genres, by = 'item') %>% group_by(user, genres) %>% summarise(count_best = n())
+  df_user_genres_best <- df_user_genres
+  total <- df_user_genres_best %>% group_by(user) %>% summarise(total = sum(count_best))
+  df_user_genres_best <- left_join(df_user_genres_best, total, by = 'user') %>% mutate(count_best = count_best / total * 100) %>% select(-total)
+  
+  return(df_user_genres_best)
+}
+
+
+create_df_user_genres <- function(df_user_genres_top_n, df_user_genres_best) {
+  df_user_genres <- full_join(df_user_genres_top_n, df_user_genres_best, by = c('user','genres'))
+  df_user_genres <- df_user_genres %>% replace(is.na(.), 0)
+  df_user_genres <- gather(df_user_genres, list, count, c(count_top_n, count_best))
+  df_user_genres <- df_user_genres %>% group_by(genres, list) %>% summarise(count  = mean(count))
+  
+  return(df_user_genres)
+}
+
+show_genre_fraction_plot <- function(df, x_variable, title) {
+  # create plot
+  colourCount = length(unique(df$genres))
+  getPalette = colorRampPalette(brewer.pal(9, "Paired"))
+  
+  ggplot(data=df, aes(y=user, x=x_variable, fill=genres)) +
+    geom_col(position = 'fill') +
+    scale_y_discrete(expand = c(0,0)) +
+    scale_x_continuous(expand = c(0,0)) +
+    labs(
+      title = title,
+      x = "Anteil",
+      y = "Kundennummer",
+      fill = element_blank()
+    ) +
+    scale_fill_manual(values = getPalette(colourCount)) +
+    theme_classic() +
+    theme(axis.text.x = element_blank(),
+          axis.ticks.x = element_blank(),
+          axis.line.x = element_blank(),
+          text = element_text(size = 12) # text size
+    )
+}
+
+show_cleveland_dot_plot <- function(df, subtitle) {
+  ggplot(df, aes(genres, count), height = 500, width = 7) +
+    scale_color_discrete(labels = c("bestbewertete Filme", "Top-N Empfehlungen")) +
+    coord_flip() +
+    geom_line() +
+    geom_point(aes(color = list)) +
+    theme_minimal() +
+    labs(
+      title = "Anteil Genres der bestbewerteten Filme im Vergleich zu \nden Top-N Empfehlungen der 20 Nutzer",
+      subtitle = subtitle,
+      x = element_blank(),
+      y = "Anteil in Prozent",
+      color = element_blank(),
+    ) +
+    theme(
+      text = element_text(size = 12),
+      legend.position = 'bottom'
+    )
+}
+
+
+compute_mean_absolute_percentage_error <- function(df_user_genres) {
+  df_user_genres_wide <- spread(df_user_genres, key = list, value = count) %>% transmute(count_diff = abs(count_best - count_top_n))
+  
+  return(round(mean(df_user_genres_wide$count_diff), 3))
 }

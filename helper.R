@@ -1,5 +1,7 @@
 # ------------------- Explorative Datenanalyse ---------------------------
 
+# ------------------- Datenreduktion ---------------------------
+
 
 data_reduction_dense <- function(ratingMatrix) {
   # convert into df
@@ -72,110 +74,6 @@ data_reduction_dense_user <- function(ratingMatrix) {
 }
 
 
-show_coverage <- function(listOfDifferentN, recommender) {
-  
-  listOfCoverages <- vector()
-  for (N in listOfDifferentN) {
-    
-    # predict top N movies
-    pre <- predict(rec, train, n = N)
-    reco_list <- as(pre, "list")
-    recommendations <- as.data.frame(reco_list)
-    all_recommendations <- list()
-    
-    # find true positives and false positives for all users and add them up
-    for (i in colnames(recommendations)) {
-      all_recommendations <- append(all_recommendations, dplyr::pull(recommendations[i]))
-    }
-    
-    
-    listOfCoverages <- c(listOfCoverages, round(length(unique(all_recommendations)) / dim(train)[2], digits = 4))
-  }
-  return (data.frame(N = listOfDifferentN, coverage = listOfCoverages))
-}
-
-
-show_novelty <- function(listOfDifferentN) {
-  # create a data set wit calculated popularity for every movie
-  # TODO: Put popularity calculation into separate function
-  popularity <- as(MovieLense, "data.frame")
-  popularity <- popularity %>%
-    group_by(item) %>% 
-    summarize(ratings = n() / dim(MovieLense)[1]) %>% 
-    mutate(ratings = log2(ratings))
-  
-  listOfNovelties <- vector()
-  for (N in listOfDifferentN) {
-    # get top-N-list for a certain N
-    pre <- predict(rec, train, n = N)
-    reco_list <- as(pre, "list")
-    # This data frame has: Rows = N Movies, Columns = Users
-    recommendations <- as.data.frame(reco_list)
-    
-    
-    total_novelty <- vector()
-    # this loop could be vectorized: https://swcarpentry.github.io/r-novice-inflammation/15-supp-loops-in-depth/
-    # didn't do it yet because computational overhead is still small
-    for (i in colnames(recommendations)) {
-      # calculate mean popularity of recommended items for user
-      reco <- recommendations[i]
-      colnames(reco)[1] <- "item"
-      reco <- inner_join(popularity, reco, by = 'item')
-      novelty <- mean(as.numeric(reco$ratings))
-      total_novelty <- c(total_novelty, novelty)
-    }
-    listOfNovelties <- c(listOfNovelties, 0 - mean(total_novelty))
-  }
-  return (data.frame(N = listOfDifferentN, novelty = listOfNovelties))
-}
-
-
-show_precision <- function(listOfDifferentN, ratingMatrix, threshold) {
-  
-  # normalize the rating matrix
-  ratingMatrix <- normalize(ratingMatrix, method="Z-score", row=TRUE)
-  
-  # create a training set and a test set with true positives for recall and precision
-  data <- as(ratingMatrix, "data.frame")
-  relevant <- data %>% group_by(user) %>% sample_n(30)
-  true_positives <- relevant %>% filter(rating >= threshold)
-  false_positives <- relevant %>% filter(rating < threshold)
-  
-  # remove testing observations from training set
-  train <- anti_join(data, relevant,by=c('user','item'))
-  train <- as(train, 'realRatingMatrix')
-  
-  # train model based on training set
-  rec <- Recommender(train, method = "IBCF", param=list(method="Cosine", k=30, normalize = NULL, na_as_zero = TRUE)) #normalize = 'center', 'Z-score'
-  
-  for (N in listOfDifferentN) {
-    
-    # predict top N movies
-    pre <- predict(rec, train, n = N)
-    reco_list <- as(pre, "list")
-    recommendations <- as.data.frame(reco_list)
-    
-    # find true positives and false positives for all users and add them up
-    true_total <- 0
-    false_total <- 0
-    for (i in as.list(unique(true_positives['user']))$user) {
-      our_user <- paste('X', i, sep = '')
-      recommendations['item'] <- recommendations[our_user]
-      
-      true_total <- true_total + nrow(inner_join(recommendations['item'], true_positives %>% filter(user == as.integer(i)), by = 'item'))
-      false_total <- false_total + nrow(inner_join(recommendations['item'], false_positives %>% filter(user == as.integer(i)), by = 'item'))
-    }
-    
-    # print Summary
-    print(paste('N =', N))
-    print(paste('Number of True Positives:',true_total))
-    print(paste('Number of False Positives:',false_total))
-    print(paste('Precision:',true_total / (true_total + false_total)))
-    print('')
-  }
-}
-
-
 get_sparsity <- function(Matrix) {
   round(( 1 - (nratings(Matrix) / (dim(Matrix)[1] * dim(Matrix)[2]))) * 100,2)
 }
@@ -236,6 +134,9 @@ show_change_of_rating_distribution <- function(oldRatingMatrix, newRatingMatrix,
 }
 
 
+# ------------------- Analyse Ähnlichkeitsmatrix ---------------------------
+
+
 split_dataset <- function(ratingMatrix, trainSize) {
   # train-test split
   set.seed(42)
@@ -250,13 +151,6 @@ split_dataset <- function(ratingMatrix, trainSize) {
   
   return(list(train, test))
 }
-
-# ------------------- Datenreduktion ---------------------------
-
-
-
-# ------------------- Analyse Ähnlichkeitsmatrix ---------------------------
-
 
 
 # ------------------- Analyse Top-N-Listen - IBCF vs UBCF ---------------------------
@@ -483,10 +377,113 @@ jaccard_sim2 <- function(A, B)
 # ------------------- Implementierung Top-N Metriken ---------------------------
 
 
+show_coverage <- function(listOfDifferentN, recommender) {
+  
+  listOfCoverages <- vector()
+  for (N in listOfDifferentN) {
+    
+    # predict top N movies
+    pre <- predict(rec, train, n = N)
+    reco_list <- as(pre, "list")
+    recommendations <- as.data.frame(reco_list)
+    all_recommendations <- list()
+    
+    # find true positives and false positives for all users and add them up
+    for (i in colnames(recommendations)) {
+      all_recommendations <- append(all_recommendations, dplyr::pull(recommendations[i]))
+    }
+    
+    
+    listOfCoverages <- c(listOfCoverages, round(length(unique(all_recommendations)) / dim(train)[2], digits = 4))
+  }
+  return (data.frame(N = listOfDifferentN, coverage = listOfCoverages))
+}
+
+
+show_novelty <- function(listOfDifferentN) {
+  # create a data set wit calculated popularity for every movie
+  # TODO: Put popularity calculation into separate function
+  popularity <- as(MovieLense, "data.frame")
+  popularity <- popularity %>%
+    group_by(item) %>% 
+    summarize(ratings = n() / dim(MovieLense)[1]) %>% 
+    mutate(ratings = log2(ratings))
+  
+  listOfNovelties <- vector()
+  for (N in listOfDifferentN) {
+    # get top-N-list for a certain N
+    pre <- predict(rec, train, n = N)
+    reco_list <- as(pre, "list")
+    # This data frame has: Rows = N Movies, Columns = Users
+    recommendations <- as.data.frame(reco_list)
+    
+    
+    total_novelty <- vector()
+    # this loop could be vectorized: https://swcarpentry.github.io/r-novice-inflammation/15-supp-loops-in-depth/
+    # didn't do it yet because computational overhead is still small
+    for (i in colnames(recommendations)) {
+      # calculate mean popularity of recommended items for user
+      reco <- recommendations[i]
+      colnames(reco)[1] <- "item"
+      reco <- inner_join(popularity, reco, by = 'item')
+      novelty <- mean(as.numeric(reco$ratings))
+      total_novelty <- c(total_novelty, novelty)
+    }
+    listOfNovelties <- c(listOfNovelties, 0 - mean(total_novelty))
+  }
+  return (data.frame(N = listOfDifferentN, novelty = listOfNovelties))
+}
+
+
+show_precision <- function(listOfDifferentN, ratingMatrix, threshold) {
+  
+  # normalize the rating matrix
+  ratingMatrix <- normalize(ratingMatrix, method="Z-score", row=TRUE)
+  
+  # create a training set and a test set with true positives for recall and precision
+  data <- as(ratingMatrix, "data.frame")
+  relevant <- data %>% group_by(user) %>% sample_n(30)
+  true_positives <- relevant %>% filter(rating >= threshold)
+  false_positives <- relevant %>% filter(rating < threshold)
+  
+  # remove testing observations from training set
+  train <- anti_join(data, relevant,by=c('user','item'))
+  train <- as(train, 'realRatingMatrix')
+  
+  # train model based on training set
+  rec <- Recommender(train, method = "IBCF", param=list(method="Cosine", k=30, normalize = NULL, na_as_zero = TRUE)) #normalize = 'center', 'Z-score'
+  
+  for (N in listOfDifferentN) {
+    
+    # predict top N movies
+    pre <- predict(rec, train, n = N)
+    reco_list <- as(pre, "list")
+    recommendations <- as.data.frame(reco_list)
+    
+    # find true positives and false positives for all users and add them up
+    true_total <- 0
+    false_total <- 0
+    for (i in as.list(unique(true_positives['user']))$user) {
+      our_user <- paste('X', i, sep = '')
+      recommendations['item'] <- recommendations[our_user]
+      
+      true_total <- true_total + nrow(inner_join(recommendations['item'], true_positives %>% filter(user == as.integer(i)), by = 'item'))
+      false_total <- false_total + nrow(inner_join(recommendations['item'], false_positives %>% filter(user == as.integer(i)), by = 'item'))
+    }
+    
+    # print Summary
+    print(paste('N =', N))
+    print(paste('Number of True Positives:',true_total))
+    print(paste('Number of False Positives:',false_total))
+    print(paste('Precision:',true_total / (true_total + false_total)))
+    print('')
+  }
+}
 
 
 # -----------------------Implementierung Top-N Monitor----------------------------------
-  
+
+
 create_df_user_genres_top_n <- function(recommender, df_genres) {
   # create data frame with genres
   df_genres <- df_genres %>% group_by(item, genres) %>% summarise(mean(rating))

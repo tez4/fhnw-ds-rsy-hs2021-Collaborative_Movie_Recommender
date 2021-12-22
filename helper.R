@@ -47,12 +47,13 @@ show_coverage <- function(listOfDifferentN, recommender) {
 }
 
 
-show_novelty <- function(listOfDifferentN, recommender) {
-  # create a dataset wit calculated popularity for every movie
+show_novelty <- function(listOfDifferentN) {
+  # create a data set wit calculated popularity for every movie
+  # TODO: Put popularity calculation into separate function
   popularity <- as(MovieLense, "data.frame")
   popularity <- popularity %>%
     group_by(item) %>% 
-    summarize(ratings = n() / dim(MovieLense)[2]) %>% 
+    summarize(ratings = n() / dim(MovieLense)[1]) %>% 
     mutate(ratings = log2(ratings))
   
   listOfNovelties <- vector()
@@ -60,10 +61,13 @@ show_novelty <- function(listOfDifferentN, recommender) {
     # get top-N-list for a certain N
     pre <- predict(rec, train, n = N)
     reco_list <- as(pre, "list")
+    # This data frame has: Rows = N Movies, Columns = Users
     recommendations <- as.data.frame(reco_list)
     
     
     total_novelty <- vector()
+    # this loop could be vectorized: https://swcarpentry.github.io/r-novice-inflammation/15-supp-loops-in-depth/
+    # didn't do it yet because computational overhead is still small
     for (i in colnames(recommendations)) {
       # calculate mean popularity of recommended items for user
       reco <- recommendations[i]

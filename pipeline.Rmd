@@ -935,7 +935,7 @@ levelplot(jac_own[1:20, 1:20])
 rec <- Recommender(train, method = "IBCF", param=list(method="Cosine", k=30, normalize = NULL, na_as_zero = TRUE)) #normalize = 'center', 'Z-score'
 
 df_coverage <- show_coverage(c(5,10,15,20,25,30), rec)
-df_novelty <- show_novelty(c(5,10,15,20,25,30), rec)
+df_novelty <- show_novelty(c(5,10,15,20,25,30))
 
 df_combined <- inner_join(df_coverage, df_novelty, by = 'N')
 df_combined

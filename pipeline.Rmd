@@ -369,8 +369,11 @@ ratingMatrix
 ```
 
 ```{r}
-show_sparsity_change(MovieLense, ratingMatrix)
+show_sparsity_change(MovieLense, random_matrix)
 ```
+Für die dense_matrix sinkt die Sparsity von 93.67% auf 75.80%.
+Für die dense_user_matrix sinkt die Sparsity von 93.67% auf 88.18%.
+Für die random_matrix bleibt die Sparsity praktisch unverändert. Sie sinkt von 93.67% auf 92.75%.
 
 ```{r}
 dense_matrix <- data_reduction_dense(MovieLense)
@@ -398,9 +401,9 @@ Man sieht sehr klar, dass die matrix nun deutlich weniger sparse ist.
 TODO: Plot für verschiedene Datenreduktionen
 
 ```{r fig.width = 15, fig.height = 11}
-p1 <- show_change_of_rating_distribution(MovieLense, dense_matrix, 'Für dense_matrix und N = 700 Filme')
-p2 <- show_change_of_rating_distribution(MovieLense, dense_user_matrix, 'Für dense_user_matrix und N = 700 Filme')
-p3 <- show_change_of_rating_distribution(MovieLense, random_matrix, 'Für random_matrix und N = 700 Filme')
+p1 <- show_change_of_rating_distribution(MovieLense, dense_matrix, 'Für dense_matrix, N alte Matrix = 1664 Filme, N neue Matrix = 700 Filme')
+p2 <- show_change_of_rating_distribution(MovieLense, dense_user_matrix, 'Für dense_user_matrix, N alte Matrix = 1664 Filme, N neue Matrix = 700 Filme')
+p3 <- show_change_of_rating_distribution(MovieLense, random_matrix, 'Für random_matrix, N alte Matrix = 1664 Filme, N neue Matrix = 700 Filme')
 
 grid.arrange(p1, p2, p3, ncol = 2, nrow = 2)
 ```

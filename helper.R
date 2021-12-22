@@ -194,7 +194,7 @@ show_sparsity_change <- function(oldMatrix, newMatrix) {
 }
 
 
-show_change_of_rating_distribution <- function(oldRatingMatrix, newRatingMatrix) {
+show_change_of_rating_distribution <- function(oldRatingMatrix, newRatingMatrix, Subtitle) {
   old_matrix <- as(oldRatingMatrix, "data.frame") %>% 
     group_by(item) %>%  
     summarize(
@@ -223,7 +223,7 @@ show_change_of_rating_distribution <- function(oldRatingMatrix, newRatingMatrix)
     scale_x_continuous(expand = c(0,0)) +
     labs(
       title = "Verteilung mittlere Kundenratings pro Film",
-      subtitle = "N = 1664 Filme",
+      subtitle = Subtitle,
       x = "Durchschnittliche Bewertung", 
       y = "Dichte",
       fill = element_blank()

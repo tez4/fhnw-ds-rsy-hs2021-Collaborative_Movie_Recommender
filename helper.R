@@ -24,6 +24,54 @@ data_reduction_dense <- function(ratingMatrix) {
 }
 
 
+data_reduction_random <- function(ratingMatrix) {
+  set.seed(42)
+  # convert into df
+  data <- as(ratingMatrix, "data.frame")
+  
+  # get the 400 users with most ratings
+  counts <- data %>% group_by(user) %>% count() %>% arrange(desc(n), user) %>% ungroup() %>%  sample_n(400)
+  data <- inner_join(counts, data, by="user")
+  data <- data %>% select(user, item, rating) %>% ungroup
+  data <- as.data.frame(data)
+  
+  # get the 700 Movies with most ratings
+  counts <- data %>% group_by(item) %>% count() %>% arrange(desc(n), item) %>% ungroup() %>% sample_n(700)
+  data <- inner_join(counts, data, by="item")
+  data <- data %>% select(user, item, rating) %>% ungroup
+  data <- as.data.frame(data)
+  
+  # convert back into realRatingMatrix
+  ratingMatrix <- as(data, "realRatingMatrix")
+  
+  return (ratingMatrix)
+}
+
+
+data_reduction_dense_user <- function(ratingMatrix) {
+  set.seed(42)
+  # convert into df
+  data <- as(ratingMatrix, "data.frame")
+  
+  # get the 400 users with most ratings
+  counts <- data %>% group_by(user) %>% count() %>% arrange(desc(n), user) %>% ungroup() %>%  head(400)
+  data <- inner_join(counts, data, by="user")
+  data <- data %>% select(user, item, rating) %>% ungroup
+  data <- as.data.frame(data)
+  
+  # get the 700 Movies with most ratings
+  counts <- data %>% group_by(item) %>% count() %>% arrange(desc(n), item) %>% ungroup() %>% sample_n(700)
+  data <- inner_join(counts, data, by="item")
+  data <- data %>% select(user, item, rating) %>% ungroup
+  data <- as.data.frame(data)
+  
+  # convert back into realRatingMatrix
+  ratingMatrix <- as(data, "realRatingMatrix")
+  
+  return (ratingMatrix)
+}
+
+
 show_coverage <- function(listOfDifferentN, recommender) {
   
   listOfCoverages <- vector()

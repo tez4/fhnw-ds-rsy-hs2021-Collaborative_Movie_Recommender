@@ -371,6 +371,19 @@ ratingMatrix
 ```{r}
 show_sparsity_change(MovieLense, ratingMatrix)
 ```
+
+```{r}
+dense_matrix <- data_reduction_dense(MovieLense)
+dense_matrix
+
+dense_user_matrix <- data_reduction_dense_user(MovieLense)
+dense_user_matrix
+
+random_matrix <- data_reduction_random(MovieLense)
+random_matrix
+```
+
+
 TODO: Zwei mehr datenreduktiuonen hinzufügen (1x Random, 1x Users with most ratings, but Movies random)
 TODO: Bessere namen für Matrizen
 TODO: Als plot darstellen

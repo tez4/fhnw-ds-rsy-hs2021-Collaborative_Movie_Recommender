@@ -168,7 +168,7 @@ ggplot(movies, aes(x = rating)) +
 ```
 In dieser Grafik ist die Verteilung der bewertungen zu sehen. Die Bewertungen 4 und 5 wirden klar am häufigsten vergeben, wobei 1 und 2 eher selten bewertet werden.
 
-```{r warning=FALSE}
+```{r warning=FALSE, fig.width = 15, fig.height = 11}
 # get rating count per user, add as column for further processing
 counts <- movies %>% group_by(user) %>% count()
 movies2 <- merge(movies, counts, by="user")
@@ -373,19 +373,19 @@ show_sparsity_change(MovieLense, random_matrix)
 ```
 
 ```{r}
-dense_matrix <- data_reduction_dense(MovieLense)
-dense_matrix
+dense_reduction <- data_reduction_dense(MovieLense)
+dense_reduction
 
-dense_user_matrix <- data_reduction_dense_user(MovieLense)
-dense_user_matrix
+dense_user_reduction <- data_reduction_dense_user(MovieLense)
+dense_user_reduction
 
-random_matrix <- data_reduction_random(MovieLense)
-random_matrix
+random_reduction <- data_reduction_random(MovieLense)
+random_reduction
 ```
 
 ```{r}
-matrices <- c('Original Matrix (MovieLense)', 'dense_matrix', 'dense_user_matrix', 'random_matrix')
-sparsities <- c(get_sparsity(MovieLense), get_sparsity(dense_matrix), get_sparsity(dense_user_matrix), get_sparsity(random_matrix))
+matrices <- c('Original Matrix (MovieLense)', 'dense_reduction', 'dense_user_reduction', 'random_reduction')
+sparsities <- c(get_sparsity(MovieLense), get_sparsity(dense_reduction), get_sparsity(dense_user_reduction), get_sparsity(random_reduction))
 
 df_sparsity <- data.frame(matrix = matrices, sparsity = sparsities)
 
@@ -406,14 +406,14 @@ ggplot(df_sparsity, aes(x=matrix, y = sparsity)) +
     legend.position = 'bottom'
   )
 ```
-Für die dense_matrix sinkt die Sparsity von 93.67% auf 75.80%.
-Für die dense_user_matrix sinkt die Sparsity von 93.67% auf 88.18%.
-Für die random_matrix bleibt die Sparsity praktisch unverändert. Sie sinkt von 93.67% auf 92.75%.
+Für die dense_reduction sinkt die Sparsity von 93.67% auf 75.80%.
+Für die dense_user_reduction sinkt die Sparsity von 93.67% auf 88.18%.
+Für die random_reduction bleibt die Sparsity praktisch unverändert. Sie sinkt von 93.67% auf 92.75%.
 
 ```{r fig.width = 20, fig.height = 5}
-p1 <- image(dense_matrix, main = "Raw Ratings Dense Matrix")
-p2 <- image(dense_user_matrix, main = "Raw Ratings Dense User Matrix")
-p3 <- image(random_matrix, main = "Raw Ratings Random Matrix")
+p1 <- image(dense_reduction, main = "Raw Ratings for Dense Reduction")
+p2 <- image(dense_user_reduction, main = "Raw Ratings for Dense User Reduction")
+p3 <- image(random_reduction, main = "Raw Ratings for Random Reduction")
 
 grid.arrange(p1, p2, p3, ncol = 3, nrow = 1)
 ```
@@ -422,14 +422,12 @@ Man sieht sehr klar, dass die matrix nun deutlich weniger sparse ist.
 TODO: Plot für verschiedene Datenreduktionen
 
 ```{r fig.width = 15, fig.height = 11}
-p1 <- show_change_of_rating_distribution(MovieLense, dense_matrix, 'Für dense_matrix, N alte Matrix = 1664 Filme, N neue Matrix = 700 Filme')
-p2 <- show_change_of_rating_distribution(MovieLense, dense_user_matrix, 'Für dense_user_matrix, N alte Matrix = 1664 Filme, N neue Matrix = 700 Filme')
-p3 <- show_change_of_rating_distribution(MovieLense, random_matrix, 'Für random_matrix, N alte Matrix = 1664 Filme, N neue Matrix = 700 Filme')
+p1 <- show_change_of_rating_distribution(MovieLense, dense_reduction, 'Für dense_reduction, N alte Matrix = 1664 Filme, N neue Matrix = 700 Filme')
+p2 <- show_change_of_rating_distribution(MovieLense, dense_user_reduction, 'Für dense_user_reduction, N alte Matrix = 1664 Filme, N neue Matrix = 700 Filme')
+p3 <- show_change_of_rating_distribution(MovieLense, random_reduction, 'Für random_reduction, N alte Matrix = 1664 Filme, N neue Matrix = 700 Filme')
 
 grid.arrange(p1, p2, p3, ncol = 2, nrow = 2)
 ```
-TODO: N von plot anpassen (auch N für b) darstellen)
-TODO: Plot für verschiedene Datenreduktionen
 
 ***
 ## Analyse Ähnlichkeitsmatrix
@@ -630,6 +628,7 @@ ggplot(comp_ibcf_ubcf, aes(x = intersect, y = count)) +
   theme(text = element_text(size = 12)
   )
 ```
+TODO: better x axis (make it a string so it can be discrete)
 
 ***
 ## Analyse Top-N Listen - Ratings
@@ -680,7 +679,7 @@ comp_bin_jac / length(topn_ibcf_jac_list)
 
 
 ***
-####3.Vergleiche den Anteil übereinstimmender Empfehlungen der Top-15 Liste für UBCF mit ordinalem (Cosine Similarity) vs binärem Rating (Jaccard Similarity) für alle Testkunden.
+#### Vergleiche den Anteil übereinstimmender Empfehlungen der Top-15 Liste für UBCF mit ordinalem (Cosine Similarity) vs binärem Rating (Jaccard Similarity) für alle Testkunden.
 ```{r}
 #intersect of top 15 recommendations UBCF Cosine Similarity vs UBCF Jaccard similarity
 comp_cos_jac<- 0
@@ -693,6 +692,7 @@ print('Anteil übereinstimmender Empfehlungen der Top-15 Liste: ')
 comp_cos_jac / length(topn_ubcf_jac_list)
 ```
 TODO: balkendiagramm mit verschiedenen Anteilen
+TODO: für alle Datenreduktionen
 
 ***
 ##Analyse Top-N Listen - IBCF vs SVD
@@ -1003,6 +1003,10 @@ TODO: das ganze im selben plot für verschiedene reduktionen darstellen
 ## Implementierung Top-N Monitor
 #### Fixiere 20 zufällig gewählte Testkunden für alle Modellvergleiche
 #### Bestimme den Anteil der Top-N Empfehlung nach Genres pro Kunde
+
+TODO: Hier auch 3 mal?
+TODO: IBCF im titel erwähnen
+
 ```{r}
 rec <- Recommender(train, method = "IBCF", param=list(method="Cosine", k=30, normalize = NULL, na_as_zero = TRUE))
 df_user_genres_top_n <- create_df_user_genres_top_n(rec, genres)
@@ -1043,6 +1047,7 @@ df_user_genres <- create_df_user_genres(df_user_genres_top_n, df_user_genres_bes
 show_cleveland_dot_plot(df_user_genres, 'Popular Recommender')
 ```
 
+TODO: add plot for svd recommender
 
 #### Definiere eine Qualitätsmetrik für Top-N Listen und teste sie
 ```{r}
@@ -1071,14 +1076,13 @@ ggplot(df_error, aes(x=description, y = error)) +
   geom_col(fill = 'steelblue') +
   coord_flip() +
   scale_y_continuous(expand = c(0,0)) +
+  geom_text(aes(label=error), hjust=1.5, color = 'white') +
   labs(
     title = "Mittlerer absoluter prozentualer Fehler der \nGenre-Anteile in den Top-N Empfehlungen",
     x = element_blank(), 
     y = "Mittlerer absoluter prozentualer Fehler",
     fill = element_blank()
   ) +
-  scale_fill_manual("legend", values = c("cyan3", "cyan4", "darkolivegreen3", "darkolivegreen", "coral4")
-                    )+
   theme_classic() + 
   theme(
     text = element_text(size = 12),

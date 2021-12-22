@@ -129,8 +129,9 @@ df1b%>%
   mutate(genres = fct_reorder(genres, count))%>%
   ggplot(aes(x = count, y = genres))+
   geom_col(alpha = 1, fill = 'steelblue')+
+  geom_text(aes(label=round(count,2)), hjust = -0.2, color = 'black') +
   scale_y_discrete(expand = c(0,0)) +
-  scale_x_continuous(expand = c(0,0)) +
+  scale_x_continuous(expand = c(0,0), limits = c(0,45000)) +
   geom_text(aes(label=count,2), hjust = 1.3, color = 'white') +
   labs(
     title = "Meist bewertete Genres",
@@ -143,8 +144,6 @@ df1b%>%
         text = element_text(size = 12) # text size
   )
 ```
-TODO: Anzahl hinzufügen
-
 Auch hier wird davon ausgegangen, dass die enres, welche am häufigsten bewertet wurden auch am häufigst geschaut wurden. In der Grafik ist zu sehen, dass Drama das top Genres ist, gefolgt von Comedy und Action.
 
 ***
@@ -152,6 +151,7 @@ Auch hier wird davon ausgegangen, dass die enres, welche am häufigsten bewertet
 ```{r}
 ggplot(movies, aes(x = rating)) +
   geom_bar(alpha = 1, fill = 'steelblue') +
+  geom_text(stat='count', aes(label=..count..), vjust=1.5, color = 'white') +
   scale_y_continuous(expand = c(0,0)) +
   scale_x_continuous(expand = c(0,0)) +
   labs(
@@ -272,9 +272,10 @@ movies_span <- movies %>% group_by(user) %>%
 
 set.seed(123)
 
-ggplot(movies_span, aes(x=user)) +
-  geom_bar(aes(span), fill = 'steelblue') +
-  scale_y_continuous(expand = c(0,0)) +
+ggplot(movies_span  %>% group_by(span) %>% summarise(count = n()), aes(x=span, y=count)) +
+  geom_col(fill = 'steelblue') +
+  scale_y_continuous(limits = c(0,800), expand = c(0,0)) +
+  geom_text(aes(label=round(count,2)), vjust = -0.7, color = 'black') +
   labs(
     title = "Spannweite Kundenratings",
     subtitle = "",
@@ -288,9 +289,7 @@ ggplot(movies_span, aes(x=user)) +
   )
   
 ```
-TODO: Anzahl
-
-0In diesen Grafiken sehen wir detailliertere Informationen über die Spannweite und den Mittelpunkt. In der ersten Übersicht ist die Spannweite und der Mittelpunkt einzelner Kunden dargestellt. Es fällt auf, dass trotz des teilweise relativ hohem Mittelwert alle Ratings von 1-5 abgegeben wurden. Ein rating von 5 wurde sozusagen immer abgegeben, 1 nicht immer.
+In diesen Grafiken sehen wir detailliertere Informationen über die Spannweite und den Mittelpunkt. In der ersten Übersicht ist die Spannweite und der Mittelpunkt einzelner Kunden dargestellt. Es fällt auf, dass trotz des teilweise relativ hohem Mittelwert alle Ratings von 1-5 abgegeben wurden. Ein rating von 5 wurde sozusagen immer abgegeben, 1 nicht immer.
 In der zweiten Übersicht ist die Spannweite aller Kunden dargestellt. Hier wird sichtbar, dass die meisten Kunden Bewertungen von 1-5 abgegeben haben (Spannweite=4), und nur weinige sehr homogen bewertet haben (Spannweite = 1-2). Eine kleine Spannweite kann hier auch aufgetreten sein, da diese User sehr wenige Bewertungen abgegeben haben.
 
 ***
@@ -301,6 +300,7 @@ movies_sample_long_grouped <- movies %>% group_by(rating) %>% summarise(rating_d
 ggplot(movies_sample_long_grouped, aes(x=rating, y = rating_dens)) + 
   geom_col(fill = 'steelblue') +
   scale_y_continuous(expand = c(0,0)) +
+  geom_text(aes(label=round(rating_dens,2)), vjust = 1.5, color = 'white') +
   labs(
     title = "Häufigkeit der Kundenbewertungen",
     subtitle = "N = 943 Kunden",
@@ -614,10 +614,12 @@ for (n in 1:length(topn_ibcf_list)) {
 
 comp_ibcf_ubcf <- data.frame(matrix(unlist(list_comp_ibcf_ubcf), nrow=length(list_comp_ibcf_ubcf), byrow=TRUE))
 colnames(comp_ibcf_ubcf) <- c('intersect')
-comp_ibcf_ubcf
+comp_ibcf_ubcf <- comp_ibcf_ubcf %>% group_by(intersect) %>% summarise(count = n()) %>% ungroup()
 
-ggplot(comp_ibcf_ubcf, aes(x = intersect)) +
-  geom_histogram(alpha = 1, fill = 'steelblue', bins = 4) +
+ggplot(comp_ibcf_ubcf, aes(x = intersect, y = count)) +
+  geom_col(alpha = 1, fill = 'steelblue') +
+  geom_text(aes(label=count), vjust=1.5, color = 'white') +
+  scale_y_continuous(expand = c(0,0)) +
   labs(
     title = "Verteilung der überschneidung der empfohlenen Filme",
     # subtitle = paste("N = ", nrow(df3), " Filme"),
@@ -628,8 +630,6 @@ ggplot(comp_ibcf_ubcf, aes(x = intersect)) +
   theme(text = element_text(size = 12)
   )
 ```
-TODO: scale_continuous,.... (Plot bis zum rand)
-
 
 ***
 ## Analyse Top-N Listen - Ratings

@@ -434,7 +434,7 @@ grid.arrange(p1, p2, p3, ncol = 2, nrow = 2)
 #### 1. Zerlege den reduzierten MovieLense Datensatz in ein disjunktes Trainings- und Testdatenset im Verhältnis 4:1
 ```{r}
 both <- split_dataset(ratingMatrix, 0.8)
-train <- both[[1]] %>% 
+train <- both[[1]]
 test <- both[[2]]
 
 print('Trainingsdatenset:')

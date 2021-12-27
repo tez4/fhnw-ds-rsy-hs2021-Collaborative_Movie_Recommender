@@ -307,6 +307,30 @@ hyper_param_svd <- function(seq)
 # ------------------- Implementierung Ähnlichkeitsmatrix ---------------------------
 
 
+sample_similarity <- function(movies)
+{
+  #image(as(similarity(train, method = "Cosine", which = "items"), "matrix"))
+  
+  # plotSimilarityMatrix(train, y = NULL, clusLabels = NULL, colX = NULL, colY = NULL, myLegend = NULL, fileName = "posteriorSimilarityMatrix", savePNG = FALSE, semiSupervised = FALSE, showObsNames = FALSE, clr = FALSE, clc = FALSE, plotWidth = 500, plotHeight = 450)
+  
+  #dim(as.matrix(subset(movies_wider, select = -c(user))))
+  
+  #sample <- movies_wider[, colnames(movies_wider) != 'user']
+  #sample <- sample[, sample(ncol(sample), size=100)]
+  
+  #sample_matrix <- as.matrix
+  
+  set.seed(123)
+  mov_sample <- sample(unique(movies$item), size=100)
+  
+  sample_sim <- movies %>% filter(item %in% mov_sample)
+
+  #length(unique(sample_sim$item))
+  #true_positives <- relevant %>% sum(rating >= threshold)
+  #false_positives <- relevant %>% sum(rating < threshold)
+  
+  return(sample_sim)
+}
 
 cosine_sim <- function(A, B)
 {
@@ -333,8 +357,8 @@ cosine_sim2 <- function(A, B)
   nen1 <- A %*% t(A)
   nen2 <- B %*% t(B)
   nen <- sqrt(diag(nen1) %*% t(diag(nen2)))
-  print(dim(zae))
-  print(dim(nen))
+  #print(dim(zae))
+  #print(dim(nen))
   similarity <- zae / nen
   return(similarity)
 }
@@ -372,6 +396,19 @@ jaccard_sim2 <- function(A, B)
   return (jac)
 }
 
+plot_sim <- function(A)
+{
+  rownames(A) <- c()
+  colnames(A) <- c()
+  #if(min(A) < 0)
+  #{
+  #  levelplot(A, xlab="items", ylab="items", main="IBCF similarity visualization", col.regions=colorRampPalette(c("red", "white", "black")))
+  #}
+  #else
+  #{
+  levelplot(A, xlab="items", ylab="items", main="IBCF similarity visualization", col.regions=colorRampPalette(c("white", "black")))
+  #}
+}
 
 
 # ------------------- Implementierung Top-N Metriken ---------------------------

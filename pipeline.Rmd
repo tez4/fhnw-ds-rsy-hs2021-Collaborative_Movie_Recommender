@@ -716,73 +716,63 @@ TODO: für alle Datenreduktionen
 ##Analyse Top-N Listen - IBCF vs SVD
 ####1.Vergleiche wie sich der Anteil übereinstimmender Empfehlungen der Top-15 Liste für IBCF vs verschiedene SVD Modelle verändert, wenn die Anzahl der Singulärwerte für SVD von 10 auf 20, 30, 40, 50 verändert wird
 ```{r}
-#annahme: k  anzahl singulärwerte
-#svd recommender 
-rec_svd_10 <- Recommender(train, method = "SVD", param=list(k=10 ))
-rec_svd_20 <- Recommender(train, method = "SVD", param=list(k=20 ))
-rec_svd_30 <- Recommender(train, method = "SVD", param=list(k=30 ))
-rec_svd_40 <- Recommender(train, method = "SVD", param=list(k=40 ))
-rec_svd_50 <- Recommender(train, method = "SVD", param=list(k=50 ))
+#dense_reduction, dense_user_reduction, random_reduction
 
-topn_svd_10 <- predict(rec_svd_10, test, n = 15)
-topn_svd_20 <- predict(rec_svd_20, test, n = 15)
-topn_svd_30 <- predict(rec_svd_30, test, n = 15)
-topn_svd_40 <- predict(rec_svd_40, test, n = 15)
-topn_svd_50 <- predict(rec_svd_50, test, n = 15)
+datasets = c(dense_reduction, dense_user_reduction, random_reduction)
+datasets[0]
+k = c(10, 20, 30, 40, 50)
 
+output <- data.frame('comparison' = character(), 'intersection' = numeric(), 'dataset' = character())
+colnames(output) <- c('comparison', 'intersection')
 
-topn_svd_10_list <- as(topn_svd_10, "list")
-topn_svd_20_list <- as(topn_svd_20, "list")
-topn_svd_30_list <- as(topn_svd_30, "list")
-topn_svd_40_list <- as(topn_svd_40, "list")
-topn_svd_50_list <- as(topn_svd_50, "list")
-
-#intersect of top 15 recommendations UBCF Cosine Similarity vs SVD 10
-comp_ibcf_svd_10<- 0
-for (n in 1:length(topn_ibcf_list)) {
-  intersection <- length(intersect(unlist(topn_ibcf_list[n]), unlist(topn_svd_10_list[n]))) / 15
-  comp_ibcf_svd_10 <- comp_ibcf_svd_10 + intersection
+for (d in datasets){
+  both <- split_dataset(d, 0.8)
+  train <- both[[1]]
+  test <- both[[2]]
+  print(paste('train', dim(train)))
+  print(paste('test', dim(test)))
+  
+  for (n in k){
+    rec_svd <- Recommender(train, method = "SVD", param=list(k = n))
+    topn_svd <- predict(rec_svd, test, n = 15)
+    topn_svd_list <- as(topn_svd, "list")
+  }
 }
-print('Anteil übereinstimmender Empfehlungen der Top-15 Liste IBCF vs. SVD 10: ')
-comp_ibcf_svd_10 / length(topn_ibcf_list)
 
-#intersect of top 15 recommendations UBCF Cosine Similarity vs SVD 20
-comp_ibcf_svd_20<- 0
-for (n in 1:length(topn_ibcf_list)) {
-  intersection <- length(intersect(unlist(topn_ibcf_list[n]), unlist(topn_svd_20_list[n]))) / 15
-  comp_ibcf_svd_20 <- comp_ibcf_svd_20 + intersection
+for (d in datasets){
+  both <- split_dataset(d, 0.8)
+  train <- both[[1]]
+  test <- both[[2]]
+  for(n in k){
+    rec_svd <- Recommender(train, method = "SVD", param=list(k = n ))
+    topn_svd <- predict(rec_svd, test, n = 15)
+    topn_svd_list <- as(topn_svd, "list")
+    
+    comp_ibcf_svd <- 0
+    for (i in 1:length(topn_ibcf_list)) {
+      intersection <- length(intersect(unlist(topn_ibcf_list[i]), unlist(topn_svd_list[i]))) / 15
+      comp_ibcf_svd <- comp_ibcf_svd + intersection
+    }
+    out <- c(paste('IBCF vs. SVD', n, d), round(comp_ibcf_svd / length(topn_ibcf_list), digits = 4), as.character(d))
+    output[n/10, ] <- out
+    }
+  
 }
-print('Anteil übereinstimmender Empfehlungen der Top-15 Liste IBCF vs. SVD 20: ')
-comp_ibcf_svd_20 / length(topn_ibcf_list)
-
-#intersect of top 15 recommendations UBCF Cosine Similarity vs SVD 30
-comp_ibcf_svd_30<- 0
-for (n in 1:length(topn_ibcf_list)) {
-  intersection <- length(intersect(unlist(topn_ibcf_list[n]), unlist(topn_svd_30_list[n]))) / 15
-  comp_ibcf_svd_30 <- comp_ibcf_svd_30 + intersection
+for(n in k){
+  rec_svd <- Recommender(train, method = "SVD", param=list(k = n ))
+  topn_svd <- predict(rec_svd, test, n = 15)
+  topn_svd_list <- as(topn_svd, "list")
+  
+  comp_ibcf_svd <- 0
+  for (i in 1:length(topn_ibcf_list)) {
+    intersection <- length(intersect(unlist(topn_ibcf_list[i]), unlist(topn_svd_list[i]))) / 15
+    comp_ibcf_svd <- comp_ibcf_svd + intersection
+  }
+  out <- c(paste('IBCF vs. SVD', n), round(comp_ibcf_svd / length(topn_ibcf_list), digits = 4))
+  output[n/10, ] <- out
 }
-print('Anteil übereinstimmender Empfehlungen der Top-15 Liste IBCF vs. SVD 30: ')
-comp_ibcf_svd_30 / length(topn_ibcf_list)
+output
 
-
-#intersect of top 15 recommendations UBCF Cosine Similarity vs SVD 40
-comp_ibcf_svd_40<- 0
-for (n in 1:length(topn_ibcf_list)) {
-  intersection <- length(intersect(unlist(topn_ibcf_list[n]), unlist(topn_svd_40_list[n]))) / 15
-  comp_ibcf_svd_40 <- comp_ibcf_svd_40 + intersection
-}
-print('Anteil übereinstimmender Empfehlungen der Top-15 Liste IBCF vs. SVD 40: ')
-comp_ibcf_svd_40 / length(topn_ibcf_list)
-
-
-#intersect of top 15 recommendations UBCF Cosine Similarity vs SVD 50
-comp_ibcf_svd_50<- 0
-for (n in 1:length(topn_ibcf_list)) {
-  intersection <- length(intersect(unlist(topn_ibcf_list[n]), unlist(topn_svd_50_list[n]))) / 15
-  comp_ibcf_svd_50 <- comp_ibcf_svd_50 + intersection
-}
-print('Anteil übereinstimmender Empfehlungen der Top-15 Liste IBCF vs. SVD 50: ')
-comp_ibcf_svd_50 / length(topn_ibcf_list)
 
 ```
 TODO: in for-loop

@@ -141,10 +141,9 @@ split_dataset <- function(ratingMatrix, trainSize) {
   # train-test split
   set.seed(42)
   data <- as(ratingMatrix, "data.frame")
-  df <- data %>% group_by(user) %>% summarize(mean_rating = mean(rating))
+  df <- sample_frac(unique(data$user), size = trainSize, replace = FALSE)
   
-  df <- sample_frac(df, size = trainSize, replace = FALSE)
-  df_train <- semi_join(data,df,by='user')
+  df_train <- movies %>% filter(item %in% mov_sample)
   df_test <- anti_join(data,df_train,by='user')
   train <- as(df_train, "realRatingMatrix")
   test <- as(df_test, 'realRatingMatrix')
@@ -155,7 +154,26 @@ split_dataset <- function(ratingMatrix, trainSize) {
 
 # ------------------- Analyse Top-N-Listen - IBCF vs UBCF ---------------------------
 
-
+plot_most_occ_item <- function(topnlist_df, Subtitle) {
+  
+  ggplot(topnlist_df, aes(x = n_appearances, y = movies))+
+    geom_col(alpha = 1, fill = 'steelblue')+
+    scale_y_discrete(expand = c(0,0)) +
+    scale_x_continuous(expand = c(0,0)) +
+    geom_text(aes(label=round(n_appearances,2)), hjust = 1.3, color = 'white') +
+    labs(
+      title = "Meist vorgeschlagene Filme",
+      subtitle = Subtitle,
+      y = element_blank(),
+      x = "Anzahl Vorkommen in TopNListe"
+    ) +
+    theme_classic() +
+    theme(axis.text.x = element_blank(),
+          axis.ticks.x = element_blank(),
+          axis.line.x = element_blank(),
+          text = element_text(size = 12) # text size
+    )
+}
 
 # ------------------- Analyse Top-N-Listen - Ratings ---------------------------
 
@@ -247,6 +265,9 @@ evaluate_model <- function()
 hyper_param_svd <- function(seq)
 {
   set.seed(123)
+  
+  # extract results for own plot
+  ns <- c(10, 15, 20, 25, 30)
   
   eval_k <- 15
   given_n <- 15
@@ -615,7 +636,7 @@ show_cleveland_dot_plot <- function(df, subtitle) {
       subtitle = subtitle,
       x = element_blank(),
       y = "Anteil in Prozent",
-      color = element_blank(),
+      color = element_blank()
     ) +
     theme(
       text = element_text(size = 12),

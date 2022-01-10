@@ -7,7 +7,9 @@ output:
 ---
 R-Version: **[Default] [32-bit] C:\\Program Files\\R\\R-4.1.0**
 
-In folgendem Notebook werden anhand des 'Movielens' Datensatzes aus dem Paket RecommenderLab verschiedene Recommender erstellt.Es werden verschiedene Recommender Und verschiedene Ähnlichkeiten verwendet, um diese zu vergleichen und auszuwerten. Ziel ist es, ein möglichst guter Recommender zu erstellen und zu verstehen wie er funktioniert. Zudem soll verstanden werden wie dieser bewertet wird und was in diesem Falle ein 'guter' Recommender bedeutet.
+In folgendem Notebook werden anhand des 'Movielens' Datensatzes aus dem Paket RecommenderLab verschiedene Recommender erstellt. Es werden verschiedene Recommender und verschiedene Ähnlichkeiten verwendet, um diese zu vergleichen und auszuwerten. Ziel ist es, ein möglichst guter Recommender zu erstellen und zu verstehen wie dieser funktioniert. Zudem soll verstanden werden wie dieser bewertet wird und was in diesem Falle ein 'guter' Recommender bedeutet.
+
+Dieses Notebook konzentriert sich auf Erkenntnisse von Auswertungen und Vergleichen. Um eine Bessere Übersicht zu erhalten wurden grosse sich widerholende Codes in einem 'helper.R' file ausgelagert.
 
 ```{r echo=FALSE, cache=FALSE, results=FALSE, comment=FALSE, warning=FALSE}
 # nötige Packete
@@ -73,7 +75,7 @@ ggplot(df_1, aes(y = reorder(item, +mean_rating), x = mean_rating)) +
   )
 
 ```
-TODO: beschreiben was das bringt
+Um einen ersten Überblick über die Daten zu erhalten wurde hier ein Plot von 15 zufällig gewählten Filmen samt der Durchschnittsbewertung geplottet.
 
 
 ***
@@ -232,7 +234,7 @@ ggplot(df3, aes(x = mean_rating)) +
   scale_x_continuous(expand = c(0,0)) +
   labs(
     title = "Verteilung mittlere Kundenratings pro Film",
-    subtitle = paste("N = ", nrow(df3), " Filme"),
+    subtitle = paste("N = ", nrow(movies), " Bewertungen"),
     x = "Durchschnittliche Bewertung", 
     y = "Dichte"
   ) +
@@ -240,9 +242,8 @@ ggplot(df3, aes(x = mean_rating)) +
   theme(text = element_text(size = 12)
   )
 ```
-TODO: N = bewertungen + beschreib wieso ausreisser bei 1, 2, 3, 4 & 5 filme mit wenig bewertungen sind bei destinct values
-
 In dieser Grafik ist die durchschnittliche Bewertung pro Film zu sehen, wobei auch hier zu sehen ist ,dass die die meisten Filme eine Durchschnittliche Bewertung von ca. 3 - 3.5 haben.
+Auffällig ist, dass bei den distinkten Werten (1, 2, 3, 4, & 5) aussreisser zu erkennen sind. Dies liegt an Filmen,welche nur wenige male oder nur einmal bewertet wurden.
 
 ```{r}
 ggplot(df3, aes(x = mean_rating, fill = more_than_50)) +
@@ -354,11 +355,9 @@ Durch die Normierung der Daten werden die Ratings jedes Users auf dieselbe Verte
 ```{r}
 image(as(MovieLense, "dgCMatrix"))
 ```
-TODO: Beschreib oben Links keine Ecke
-
 In dieser Grafik werden werden die Bewertungen von Users (Row) den Filmen (Column) gegenübergestellt. Die Achsenbeschriftung konnte nicht besser speizifiziert werden.
 
-Users mit tiefen ID's und Filme mit hohen ID's weisen weniger ratings auf. Filme mit tiefer ID jedoch sehr viele.
+Users mit tiefen ID's und Filme mit hohen ID's weisen weniger ratings auf. Filme mit tiefer ID jedoch sehr viele. Dies erklärt die nicht vorhandenen Datenpunkte in der Grafik oben rechts
 Auffallend ist, dass es einige wenige User gibt, die fast alle Filme bewertet haben (erkennbar durch die horizontalen scharzen Striche). Dies scheinen sehr aktive Bewerter zu sein.
 Viele Users haben jedoch nur einen kleinen Teil der Filme bewertet.
 Bei den Filmen ist eine ähnliche Tendenz wahrzunehmen, jedoch sind die vertikalen Striche breiter. Möglicherweise sind dort einige beliebte Filme zusammengefasst.
@@ -578,9 +577,7 @@ p2 <- plot_most_occ_item(ubcf_top_df, 'ubcf')
 
 grid.arrange(p1, p2, ncol = 2, nrow = 1)
 ```
-TODO: mehr beschreibung
-
-Auffällig ist, dass im UBCF die Filme, welche am häufigsten in den Top-15 Empfehlungen auftauchen, wesentlich üfters vorkommen als diese, die im IBCF als am meist vorkommende Filme definiert sind.
+Auffällig ist, dass im UBCF die Filme, welche am häufigsten in den Top-15 Empfehlungen auftauchen, wesentlich öfters vorkommen als diese, die im IBCF als am meist vorkommende Filme definiert sind. Ebenfalls auffallend ist, dass die beiden Recommender sehr verschiedene Vorschläge machen. Für die meist vorkommenden Filme in den TopNListen gibt es hier keine Überschneidung.
 
 ```{r}
 #get distribution of intersect for each user
@@ -595,7 +592,7 @@ for (n in 1:length(topn_ibcf_list)) {
 comp_ibcf_ubcf <- data.frame(matrix(unlist(list_comp_ibcf_ubcf), nrow=length(list_comp_ibcf_ubcf), byrow=TRUE))
 colnames(comp_ibcf_ubcf) <- c('intersect')
 comp_ibcf_ubcf <- comp_ibcf_ubcf %>% group_by(intersect) %>% summarise(count = n()) %>% ungroup()
-comp_ibcf_ubcf$intersect <- as.character(comp_ibcf_ubcf$intersect)
+comp_ibcf_ubcf$intersect <- as.character(round(comp_ibcf_ubcf$intersect, 2))
 
 ggplot(comp_ibcf_ubcf, aes(x = intersect, y = count)) +
   geom_col(alpha = 1, fill = 'steelblue') +
@@ -611,7 +608,7 @@ ggplot(comp_ibcf_ubcf, aes(x = intersect, y = count)) +
   theme(text = element_text(size = 12)
   )
 ```
-TODO: round values of x axis + beschreib
+TODO: beschreib
 
 ***
 ## Analyse Top-N Listen - Ratings
@@ -689,7 +686,7 @@ k = c(10, 20, 30, 40, 50)
 dense_reduction
 
 output <- data.frame('comparison' = character(), 'intersection' = numeric(), 'dataset' = character())
-colnames(output) <- c('comparison', 'intersection')
+colnames(output) <- c('comparison', 'intersection', 'dataset')
 
 for (d in 1:length(datasets)){
   e <- evaluationScheme(datasets[[d]], method="split", train=0.8, k=1, given=0)
@@ -706,18 +703,31 @@ for (d in 1:length(datasets)){
       intersection <- length(intersect(unlist(topn_ibcf_list[i]), unlist(topn_svd_list[i]))) / 15
       comp_ibcf_svd <- comp_ibcf_svd + intersection
     }
-    out <- c(paste('IBCF vs. SVD', n, datasetnames[[d]]), round(comp_ibcf_svd / length(topn_ibcf_list), digits = 4), as.character(datasetnames[[d]]))
+    out <- c(paste('IBCF vs. SVD', n), round(comp_ibcf_svd / length(topn_ibcf_list), digits = 4), as.character(datasetnames[[d]]))
     output[nrow(output) + 1,] = out
     }
 }
 
 output
 
-
+ggplot(output, aes(x = comparison, y = intersection, fill = dataset)) +
+  geom_col(alpha = 1, position = position_dodge()) +
+  #geom_text(aes(label=count), vjust=1.5, color = 'white') +
+  scale_y_discrete(expand = c(0,0)) +
+  labs(
+    title = "Verteilung der überschneidung der empfohlenen Filme",
+    # subtitle = paste("N = ", nrow(df3), " Filme"),
+    x = "Überschneidung in %", 
+    y = "Häufigkeit"
+  ) +
+  theme_classic() +
+  theme(text = element_text(size = 12),
+        axis.text.x = element_text(angle = 60, hjust = 1)
+  )
 ```
 
 
-TODO: PLOT! balkendiagramm mit verschiedenen Anteilen - barchart mit farben?
+TODO: beschreib
 
 ***
 ## Wahl des optimalen Recommenders

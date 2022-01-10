@@ -31,13 +31,13 @@ data_reduction_random <- function(ratingMatrix) {
   # convert into df
   data <- as(ratingMatrix, "data.frame")
   
-  # get the 400 users with most ratings
+  # get 400 random users
   counts <- data %>% group_by(user) %>% count() %>% arrange(desc(n), user) %>% ungroup() %>%  sample_n(400)
   data <- inner_join(counts, data, by="user")
   data <- data %>% select(user, item, rating) %>% ungroup
   data <- as.data.frame(data)
   
-  # get the 700 Movies with most ratings
+  # get 700 random movies
   counts <- data %>% group_by(item) %>% count() %>% arrange(desc(n), item) %>% ungroup() %>% sample_n(700)
   data <- inner_join(counts, data, by="item")
   data <- data %>% select(user, item, rating) %>% ungroup
@@ -61,7 +61,7 @@ data_reduction_dense_user <- function(ratingMatrix) {
   data <- data %>% select(user, item, rating) %>% ungroup
   data <- as.data.frame(data)
   
-  # get the 700 Movies with most ratings
+  # get 700 Movies random movies
   counts <- data %>% group_by(item) %>% count() %>% arrange(desc(n), item) %>% ungroup() %>% sample_n(700)
   data <- inner_join(counts, data, by="item")
   data <- data %>% select(user, item, rating) %>% ungroup

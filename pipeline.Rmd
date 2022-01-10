@@ -7,9 +7,9 @@ output:
 ---
 R-Version: **[Default] [32-bit] C:\\Program Files\\R\\R-4.1.0**
 
-In folgendem Notebook werden anhand des 'Movielens' Datensatzes aus dem Paket RecommenderLab verschiedene Recommender erstellt. Es werden verschiedene Recommender und verschiedene Ähnlichkeiten verwendet, um diese zu vergleichen und auszuwerten. Ziel ist es, ein möglichst guter Recommender zu erstellen und zu verstehen wie dieser funktioniert. Zudem soll verstanden werden wie dieser bewertet wird und was in diesem Falle ein 'guter' Recommender bedeutet.
+In folgendem Notebook werden anhand des `MovieLense` Datensatzes aus dem Paket RecommenderLab verschiedene Recommender erstellt. Es werden verschiedene Recommender und verschiedene Ähnlichkeiten verwendet, um diese zu vergleichen und auszuwerten. Ziel ist es, ein möglichst guter Recommender zu erstellen und zu verstehen wie dieser funktioniert. Zudem soll verstanden werden wie dieser bewertet wird und was in diesem Falle ein 'guter' Recommender bedeutet.
 
-Dieses Notebook konzentriert sich auf Erkenntnisse von Auswertungen und Vergleichen. Um eine Bessere Übersicht zu erhalten wurden grosse sich widerholende Codes in einem 'helper.R' file ausgelagert.
+Dieses Notebook konzentriert sich auf Erkenntnisse von Auswertungen und Vergleichen. Um eine Bessere Übersicht zu erhalten wurden grosse sich widerholende Codes im Helperfile `helper.R` ausgelagert.
 
 ```{r echo=FALSE, cache=FALSE, results=FALSE, comment=FALSE, warning=FALSE}
 # nötige Packete
@@ -30,11 +30,8 @@ source("helper.R")
 
 # change options
 options(dplyr.summarise.inform = FALSE)
-```
 
-***
-#### data wrangling
-```{r}
+# --------------------------- data wrangling -------------------------------------
 # Daten importieren
 data(MovieLense)
 
@@ -54,10 +51,11 @@ movies_wider <- pivot_wider(
 
 ***
 ## Explorative Datenanalyse
-```{r}
-df_1 <- movies %>% group_by(item) %>%  summarize(mean_rating = mean(rating)) %>% sample_n(15) %>% arrange(desc(mean_rating))
+```{r fig.width = 15, fig.height = 5.5}
+set.seed(42)
+df_1 <- movies %>% group_by(item) %>%  summarize(mean_rating = mean(rating), count = n()) %>% sample_n(15) %>% arrange(desc(mean_rating))
 
-ggplot(df_1, aes(y = reorder(item, +mean_rating), x = mean_rating)) +
+p1 <- ggplot(df_1, aes(y = reorder(item, +mean_rating), x = mean_rating)) +
   geom_col(alpha = 1, fill = 'steelblue') +
   scale_y_discrete(expand = c(0,0)) +
   scale_x_continuous(expand = c(0,0)) +
@@ -65,7 +63,8 @@ ggplot(df_1, aes(y = reorder(item, +mean_rating), x = mean_rating)) +
   labs(
     title = "Durchschnittliche Filmbewertung",
     subtitle = "Zufällige Stichprobe von 15 Filmen",
-    y = element_blank(),    x = "Dirchschnittlich Bewertung in Sternen"
+    y = element_blank(),
+    x = "Durchschnittliche Bewertung in Sternen"
   ) +
   theme_classic() +
   theme(axis.text.x = element_blank(),
@@ -74,8 +73,27 @@ ggplot(df_1, aes(y = reorder(item, +mean_rating), x = mean_rating)) +
         text = element_text(size = 12) # text size
   )
 
+p2 <- ggplot(df_1, aes(y = reorder(item, +mean_rating), x = count)) +
+  geom_col(alpha = 1, fill = 'steelblue') +
+  scale_y_discrete(expand = c(0,0)) +
+  scale_x_continuous(limit = c(0,125), expand = c(0,0)) +
+  geom_text(aes(label=count), hjust = -.3, color = 'black') +
+  labs(
+    title = "Anzahl Bewertungen",
+    subtitle = "Zufällige Stichprobe von 15 Filmen",
+    y = element_blank(),
+    x = "Anzahl Bewertungen"
+  ) +
+  theme_classic() +
+  theme(axis.text.x = element_blank(),
+        axis.ticks.x = element_blank(),
+        axis.line.x = element_blank(),
+        text = element_text(size = 12) # text size
+  )
+
+grid.arrange(p1, p2, ncol = 2, nrow = 1)
 ```
-Um einen ersten Überblick über die Daten zu erhalten wurde hier ein Plot von 15 zufällig gewählten Filmen samt der Durchschnittsbewertung geplottet.
+Um einen ersten Überblick über die Daten zu erhalten wurde hier ein Plot von 15 zufällig gewählten Filmen samt der Durchschnittsbewertung und Anzahl Bewertungen geplottet. Es fällt auf, dass besonders schlecht bewertete Filme oft auch weniger angeschaut wurden.
 
 
 ***
@@ -148,7 +166,7 @@ df1b%>%
         text = element_text(size = 12) # text size
   )
 ```
-Auch hier wird davon ausgegangen, dass die enres, welche am häufigsten bewertet wurden auch am häufigst geschaut wurden. In der Grafik ist zu sehen, dass Drama das top Genres ist, gefolgt von Comedy und Action.
+Auch hier wird davon ausgegangen, dass die Genres, welche am häufigsten bewertet wurden auch am häufigsten geschaut wurden. In der Grafik ist zu sehen, dass Drama das top Genres ist, gefolgt von Comedy und Action. Dies stimmt auch mit unserer eigenen Filmerfahrung überein.
 
 ***
 #### 2. Wie verteilen sich die Kundenratings gesamthaft und nach Genres?
@@ -170,7 +188,7 @@ ggplot(movies, aes(x = rating)) +
     text = element_text(size = 12)
   )
 ```
-In dieser Grafik ist die Verteilung der bewertungen zu sehen. Die Bewertungen 4 und 5 wirden klar am häufigsten vergeben, wobei 1 und 2 eher selten bewertet werden.
+In dieser Grafik ist die Verteilung der Ratings zu sehen. Die Ratings 3 und 4 werden klar am häufigsten vergeben, wobei Filme eher selten mit den Ratings 1 und 2 bewertet werden.
 
 ```{r warning=FALSE, fig.width = 15, fig.height = 11}
 # get rating count per user, add as column for further processing
@@ -213,7 +231,7 @@ ggplot(genres, aes(x = rating, fill = genres)) +
     legend.position = 'none'
   )
 ```
-Hier ist zu sehen, dass das Genres Drama am meisten bewertet wurde, wobei Dokumentationen am wenigsten Bewertungen erhalten haben. Die Bewertungen pro Genres verteilen sich jeweils sehr ähnlich. Die Verteilungen der einzelnen Genres sind ebenfalls ähnlich verteilt wie die bewertungen gesamthaft.
+Hier ist zu sehen, dass das Genres Drama am meisten bewertet wurde, wobei Dokumentationen am wenigsten Bewertungen erhalten haben. Die Bewertungen pro Genres verteilen sich jeweils sehr ähnlich. Die Verteilungen der einzelnen Genres sind ebenfalls ähnlich verteilt wie die Bewertungen gesamthaft.
 
 ***
 #### 3.Wie verteilen sich die mittleren Kundenratings pro Film?
@@ -242,8 +260,8 @@ ggplot(df3, aes(x = mean_rating)) +
   theme(text = element_text(size = 12)
   )
 ```
-In dieser Grafik ist die durchschnittliche Bewertung pro Film zu sehen, wobei auch hier zu sehen ist ,dass die die meisten Filme eine Durchschnittliche Bewertung von ca. 3 - 3.5 haben.
-Auffällig ist, dass bei den distinkten Werten (1, 2, 3, 4, & 5) aussreisser zu erkennen sind. Dies liegt an Filmen,welche nur wenige male oder nur einmal bewertet wurden.
+In dieser Grafik ist die durchschnittliche Bewertung pro Film zu sehen, wobei auch hier zu sehen ist ,dass die die meisten Filme eine durchschnittliche Bewertung von ca. 3 - 3.5 haben.
+Auffällig ist, dass bei den ganzen Zahlen (1, 2, 3, 4 & 5) besonders viele Bewertungen zu sehen sind. Dies liegt an den Filmen, welche nur wenige oder nur eine Bewertung erhalten haben.
 
 ```{r}
 ggplot(df3, aes(x = mean_rating, fill = more_than_50)) +
@@ -252,7 +270,6 @@ ggplot(df3, aes(x = mean_rating, fill = more_than_50)) +
   scale_x_continuous(expand = c(0,0)) +
   labs(
     title = "Verteilung mittlere Kundenratings pro Film",
-    subtitle = "N = 1664 Filme",
     x = "Durchschnittliche Bewertung", 
     y = "Dichte",
     fill = element_blank()
@@ -263,9 +280,7 @@ ggplot(df3, aes(x = mean_rating, fill = more_than_50)) +
     legend.position = 'bottom'
   )
 ```
-TODO: N = Anzahl bewertungen für Kategorie a & b
-
-Für diese Grafik wurden die Filme in zwei gruppen unterteilt: Filme die weniger als 50 bewertungen erhalten haben, und Filme welche mehr als 50 Bewertungen erhalten haben. In der Grafik ist imernoch die durchschnittliche Bewertung dieser Filme zu sehen wobei deutlich erkannt werden kann, dass filme welche weniger bewertungen erhalten haben, tendenziell auch schlechter bewertet wurden.
+Für diese Grafik wurden die Filme in zwei Gruppen unterteilt: Filme die weniger als 50 bewertungen erhalten haben, und Filme welche mehr als 50 Bewertungen erhalten haben. In der Grafik ist ebenfalls die durchschnittliche Bewertung der Filme zu sehen, wobei deutlich erkannt werden kann, dass Filme, welche weniger Bewertungen erhalten haben, tendenziell auch schlechter bewertet wurden.
 
 ***
 #### 4.Wie stark streuen die Ratings von individuellen Kunden?
@@ -294,8 +309,7 @@ ggplot(movies_span  %>% group_by(span) %>% summarise(count = n()), aes(x=span, y
     legend.position = 'bottom'
   )
 ```
-In diesen Grafiken sehen wir detailliertere Informationen über die Spannweite und den Mittelpunkt. In der ersten Übersicht ist die Spannweite und der Mittelpunkt einzelner Kunden dargestellt. Es fällt auf, dass trotz des teilweise relativ hohem Mittelwert alle Ratings von 1-5 abgegeben wurden. Ein rating von 5 wurde sozusagen immer abgegeben, 1 nicht immer.
-In der zweiten Übersicht ist die Spannweite aller Kunden dargestellt. Hier wird sichtbar, dass die meisten Kunden Bewertungen von 1-5 abgegeben haben (Spannweite=4), und nur weinige sehr homogen bewertet haben (Spannweite = 1-2). Eine kleine Spannweite kann hier auch aufgetreten sein, da diese User sehr wenige Bewertungen abgegeben haben.
+In dieser Grafik ist die Spannweite aller Kunden dargestellt. Hier wird sichtbar, dass die meisten Kunden Bewertungen von 1-5 abgegeben haben (Spannweite=4), und nur weinige sehr homogen bewertet haben (Spannweite = 1-2). Eine kleine Spannweite kann hier natürlich auch aufgetreten sein, weil diese Kunden gesamthaft sehr wenige Bewertungen abgegeben haben.
 
 ***
 #### 5.Welchen Einfluss hat die Normierung der Ratings pro Kunde auf deren Verteilung?
@@ -321,6 +335,7 @@ ggplot(movies_sample_long_grouped, aes(x=rating, y = rating_dens)) +
     legend.position = 'bottom'
   )
 ```
+Hier ist noch einmal die Grafik mit der Verteilung der Kundenratings bevor diese Normiert wurden. Es fällt auf, dass diese diskret ist.
 
 ```{r}
 MovNorm <- normalize(MovieLense, method="Z-score")
@@ -345,9 +360,8 @@ ggplot(mov, aes(x=rating)) +
     legend.position = 'bottom'
   )
 ```
-
 Die Ratings sind nun ungefähr Normalverteilt mit einem Durchschnittsrating von 0 und einer Standardabweichung von 1. 
-Erkennbar ist, dass die Verteilung rechtssteil und linksschief ist, also mehrheitlich positive Bewertungen abgegeben wurden. 
+Erkennbar ist, dass die Verteilung rechtssteil und linksschief ist, weil mehrheitlich positive Bewertungen abgegeben wurden. 
 Durch die Normierung der Daten werden die Ratings jedes Users auf dieselbe Verteilung gestaucht, wodurch man die Verteilung aller Daten analysieren kann. Dadurch hat man beispielsweise die Möglichkeit die durchschnittliche Bewertungstendenz herauszufinden. 
 
 ***
@@ -355,21 +369,14 @@ Durch die Normierung der Daten werden die Ratings jedes Users auf dieselbe Verte
 ```{r}
 image(as(MovieLense, "dgCMatrix"))
 ```
-In dieser Grafik werden werden die Bewertungen von Users (Row) den Filmen (Column) gegenübergestellt. Die Achsenbeschriftung konnte nicht besser speizifiziert werden.
-
-Users mit tiefen ID's und Filme mit hohen ID's weisen weniger ratings auf. Filme mit tiefer ID jedoch sehr viele. Dies erklärt die nicht vorhandenen Datenpunkte in der Grafik oben rechts
-Auffallend ist, dass es einige wenige User gibt, die fast alle Filme bewertet haben (erkennbar durch die horizontalen scharzen Striche). Dies scheinen sehr aktive Bewerter zu sein.
-Viele Users haben jedoch nur einen kleinen Teil der Filme bewertet.
-Bei den Filmen ist eine ähnliche Tendenz wahrzunehmen, jedoch sind die vertikalen Striche breiter. Möglicherweise sind dort einige beliebte Filme zusammengefasst.
+In dieser Grafik werden werden die Bewertungen von Users (Row) den Filmen (Column) gegenübergestellt. Die Achsenbeschriftung konnte nicht besser speizifiziert werden. Users mit tiefen ID's und Filme mit hohen ID's weisen weniger Ratings auf. Filme mit tiefer ID jedoch sehr viele. Auffallend ist, dass es einige wenige User gibt, die fast alle Filme bewertet haben (erkennbar durch die horizontalen scharzen Striche). Dies scheinen sehr aktive Bewerter zu sein.
+Viele Users haben jedoch nur einen kleinen Teil der Filme bewertet. Bei den Filmen ist eine ähnliche Tendenz wahrzunehmen.
 
 ```{r}
 sparcity <- sum(is.na(movies_wider[,-1])) / prod(dim(movies_wider))
-sparcity
+print(paste('Die Sparcity im Datensatz ist:',sparcity))
 ```
-TODO: nur 6.4% der Daten haben Values / sind non NA's- ein User hat im durchschnitt 6.4% der Filme bewertet -> schöner schreiben
-
-Die Matrix ist sehr sparce. Fast 94% der Daten bestehen aus NA Werten. 
-Dies wurde so erwartet, da es unwahrscheinlich ist dass ein Film von allen users akiv bewertet wird, oder dass ein User alle Filme ansieht und auch bewertet.
+Die Sparcity ist ungefähr 0.936. Dies bedeutet, dass ungefähr 6.4% der Daten Non-NA-Values sind. Somit hat der Durchschnittliche User 6.4% der verfügbaren Filme bewertet. Die Matrix ist mit einer Sparcity von ca. 0.936 sehr sparce. Dies haben wir ungefähr so erwartet, da es sehr unwahrscheinlich ist, dass ein Film von allen Nutzern bewertet wird, oder, dass ein Nutzer alle Filme anschaut und auch bewertet.
 
 ***
 ## Datenreduktion
@@ -392,7 +399,7 @@ ggplot(df_sparsity, aes(x=matrix, y = sparsity)) +
   geom_col(fill = 'steelblue') +
   coord_flip() +
   scale_y_continuous(expand = c(0,0)) +
-  geom_text(aes(label=round(sparsity,2)), hjust = 1.3, color = 'white') +
+  geom_text(aes(label=paste0(round(sparsity,2),'%')), hjust = 1.3, color = 'white') +
   labs(
     title = "Sparsity der verschiedenen Datenreduktionen",
     x = element_blank(), 
@@ -405,10 +412,7 @@ ggplot(df_sparsity, aes(x=matrix, y = sparsity)) +
     legend.position = 'bottom'
   )
 ```
-TODO: Besserer beschreib zu den reduktionen - wieso welche reduktionen + wieso diese sparcity
-Für die dense_reduction sinkt die Sparsity von 93.67% auf 75.80%.
-Für die dense_user_reduction sinkt die Sparsity von 93.67% auf 88.18%.
-Für die random_reduction bleibt die Sparsity praktisch unverändert. Sie sinkt von 93.67% auf 92.75%.
+Wir haben drei verschiedene Datenreduktionen vorgenommen. Das Ziel dieser Datenreduktionen war es den Datensatz auf verschiedene Weisen auf 400 Kunden und 700 Filme zu reduzieren. Die `random_reduction` reduziert den Datensatz auf eine zufällige Weise. Die 400 Kunden und die 700 Filme werden dabei also rein zufällig ausgewählt. Dabei bleibt die Sparsity praktisch unverändert. Sie sinkt von 93.67% auf 92.75%. Die `dense_user_reduction` reduziert die Filme immernoch zufällig, jedoch werden hier die 400 Kunden mit den meisten Bewertungen genutzt. Für diese Datenreduktion sinkt die Sparsity von 93.67% auf 88.18%. Die `dense_reduction` nimmt die 400 Kunden mit den meisten Bewertungen und die 700 Meistbewerteten Filme. Dies sinkt die Sparsity von 93.67% auf 75.80%.
 
 ```{r fig.width = 20, fig.height = 5}
 p1 <- image(dense_reduction, main = "Raw Ratings for Dense Reduction")
@@ -417,10 +421,7 @@ p3 <- image(random_reduction, main = "Raw Ratings for Random Reduction")
 
 grid.arrange(p1, p2, p3, ncol = 3, nrow = 1)
 ```
-TODO: mehr beschreibung
-
-Man sieht sehr klar, dass die matrix nun deutlich weniger sparse ist.
-
+Hier Kann man noch die verschiedenen Matrizen sehen. Es fällt auch hier klar auf, dass die Density der `dense_reduction` am grössten ist, die Matrix also am klar wenigsten Sparce ist. Auch die `dense_user_reduction` hat hier um einiges mehr gefüllte Zellen als die Matrix mit der `random_reduction`.
 
 ```{r fig.width = 15, fig.height = 11}
 p1 <- show_change_of_rating_distribution(MovieLense, dense_reduction, 'Für dense_reduction, N alte Matrix = 1664 Filme, N neue Matrix = 700 Filme')
@@ -596,8 +597,8 @@ comp_ibcf_ubcf$intersect <- as.character(round(comp_ibcf_ubcf$intersect, 2))
 
 ggplot(comp_ibcf_ubcf, aes(x = intersect, y = count)) +
   geom_col(alpha = 1, fill = 'steelblue') +
-  geom_text(aes(label=count), vjust=1.5, color = 'white') +
-  scale_y_continuous(expand = c(0,0)) +
+  geom_text(aes(label=count), vjust=-.5, color = 'black') +
+  scale_y_continuous(limits = c(0,37),expand = c(0,0)) +
   labs(
     title = "Verteilung der überschneidung der empfohlenen Filme",
     # subtitle = paste("N = ", nrow(df3), " Filme"),
@@ -655,7 +656,6 @@ comparison[3,1] <- 'ubcf cos - ubcf jac'
 comparison[3,2] <- round(comp_cos_jac / length(topn_ubcf_jac_list), 2)
 
 comparison <- data.frame(comparison)
-comparison
 
 ggplot(comparison, aes(x = X1, y = X2)) +
   geom_col(alpha = 1, fill = 'steelblue') +
@@ -990,21 +990,19 @@ TODO: das ganze im selben plot für verschiedene reduktionen darstellen + text +
 TODO: Hier auch 3 mal? - nein
 TODO: IBCF im titel erwähnen
 
-```{r}
+```{r fig.width = 7.5, fig.height = 5}
 rec <- Recommender(train, method = "IBCF", param=list(method="Cosine", k=30, normalize = NULL, na_as_zero = TRUE))
 df_user_genres_top_n <- create_df_user_genres_top_n(rec, genres)
 show_genre_fraction_plot(df_user_genres_top_n, df_user_genres_top_n$count_top_n, "Anteil Genres in Top-N Empfehlung von 20 zuf. Kunden")
 ```
-TODO: text
-
 Auf diesem Plot ist die Unterschiedliche Verteilung der Genres in den Top-N Empfehlungen für die verschiedenen Kunden zu sehen. Es fällt auf, dass bei diesem Recommender durchaus verschiedenartige Verteilungen bei den Genres für die verschiednen Nutzer auftreten.
 
 #### Bestimme pro Kunde den Anteil nach Genres seiner Top-Filme (=Filme, welche vom Kunden die besten Bewertungen erhalten haben)
-```{r}
+```{r fig.width = 7.5, fig.height = 5}
 df_user_genres_best <- create_df_user_genres_best(movies, df_user_genres_top_n, genres)
 show_genre_fraction_plot(df_user_genres_best, df_user_genres_best$count_best, "Anteil Genres der bestbewerteten Filme von 20 zuf. Kunden")
 ```
-Auf diesem Plot ist die Unterschiedliche Verteilung der Genres bei den bestbewerteten Filmen für die verschiedenen Kunden zu sehen. Bestbewertet bedeutet in diesem Fall, dass die Bewertung eines Filmes mindestens 0.5 höher sein muss, als die Durchschnittliche Bewertung des Nutzers. Es fällt auf, dass bei den Top-N Empfehlungen allgemein Action zu wenig empfohlen wurde. Comedy hingegen wurde häufig zu viel empfohlen. Bei genauerem betrachten fällt auf, dass dieser Recommeder beispielsweise bei Kunde Nr. 38 auf die Genres bezogen sehr schlechte Empfehlungen macht.
+Auf diesem Plot ist die Unterschiedliche Verteilung der Genres bei den bestbewerteten Filmen für die verschiedenen Kunden zu sehen. Bestbewertet bedeutet in diesem Fall, dass die Bewertung eines Filmes mindestens 0.5 höher sein muss, als die Durchschnittliche Bewertung des Nutzers. Es fällt auf, dass bei den Top-N Empfehlungen allgemein Action zu wenig empfohlen wurde. Comedy hingegen wurde häufig zu viel empfohlen. Bei genauerem betrachten fällt auf, dass dieser Recommeder beispielsweise bei Kunde Nr. 38 auf die Genres bezogen relativ schlechte Empfehlungen macht.
 
 #### Vergleiche pro Kunde Top-Empfehlungen und Top-Filmen nach Genres
 ```{r fig.width = 7.5, fig.height = 6}
@@ -1031,7 +1029,12 @@ df_user_genres <- create_df_user_genres(df_user_genres_top_n, df_user_genres_bes
 show_cleveland_dot_plot(df_user_genres, 'Popular Recommender')
 ```
 
-TODO: add plot for svd recommender
+```{r fig.width = 7.5, fig.height = 6}
+rec <- Recommender(train, method = "POPULAR")
+df_user_genres_top_n <- create_df_user_genres_top_n(rec, genres)
+df_user_genres <- create_df_user_genres(df_user_genres_top_n, df_user_genres_best)
+show_cleveland_dot_plot(df_user_genres, 'Popular Recommender')
+```
 
 #### Definiere eine Qualitätsmetrik für Top-N Listen und teste sie
 ```{r}

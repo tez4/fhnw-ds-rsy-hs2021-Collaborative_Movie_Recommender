@@ -430,7 +430,7 @@ p3 <- show_change_of_rating_distribution(MovieLense, random_reduction, 'Für ran
 
 grid.arrange(p1, p2, p3, ncol = 2, nrow = 2)
 ```
-TODO: beschreibung
+Auf dieser Grafik ist die Veränderung der Verteilung der Bewertungen für die verschiedenen Datenreduktionen zu sehen. Die Verteilung der Bewertungen verändert sich nur für die `dense_reduction` signifikant. Bei dieser Datenreduktion werden die Filme ausgewählt, welche am meisten Bewertungen haben. Somit ist es logisch, dass auch die durchschnittliche Bewertung dabei steigt. Dies haben wir schon in der explorativen Datenanalyse herausgefunden.
 
 
 ***
@@ -1030,10 +1030,10 @@ show_cleveland_dot_plot(df_user_genres, 'Popular Recommender')
 ```
 
 ```{r fig.width = 7.5, fig.height = 6}
-rec <- Recommender(train, method = "POPULAR")
+rec <- Recommender(train, method = "SVD")
 df_user_genres_top_n <- create_df_user_genres_top_n(rec, genres)
 df_user_genres <- create_df_user_genres(df_user_genres_top_n, df_user_genres_best)
-show_cleveland_dot_plot(df_user_genres, 'Popular Recommender')
+show_cleveland_dot_plot(df_user_genres, 'SVD Recommender')
 ```
 
 #### Definiere eine Qualitätsmetrik für Top-N Listen und teste sie
@@ -1042,7 +1042,8 @@ show_cleveland_dot_plot(df_user_genres, 'Popular Recommender')
 algorithms <- list(
   "IBCF cosine" = list(name="IBCF", param=list(k = 30, method = "cosine", normalize = NULL, na_as_zero = TRUE), desc = 'IBCF Recommender mit Cosine Similarity'),
   "UBCF Jaccard" = list(name="UBCF", param=list(method = "jaccard"), desc = 'UBCF Recommender mit Jaccard Similarity'),
-  "Popular" = list(name="POPULAR", param=NULL, desc = 'Popular Recommender')
+  "Popular" = list(name="POPULAR", param=NULL, desc = 'Popular Recommender'),
+  "SVD" = list(name="SVD", param=NULL, desc = 'SVD Recommender')
 )
 
 errors <- vector()

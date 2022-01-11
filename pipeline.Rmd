@@ -734,8 +734,16 @@ TODO: beschreib
 #### Verwende für die Evaluierung 10-fache Kreuzvalidierung,
 
 ```{r echo=FALSE, cache=FALSE, results=FALSE, comment=FALSE, warning=FALSE, message=FALSE, fig.width = 15, fig.height = 10}
-evaluate_model()
+evaluate_model(dense_reduction)
 ```
+
+
+```{r echo=FALSE, cache=FALSE, results=FALSE, comment=FALSE, warning=FALSE, message=FALSE, fig.width = 15, fig.height = 10}
+evaluate_model(dense_user_reduction)
+```
+
+Für die Evaluierung und Optimierung wurden die dense reduzierten Datensätze verwendet. Dies, da alle items in der Matrix mehr Einträge als haben müssen als im given_n spezifiziert. Die Reduzierung dieses Parameters würde wiederum zu veränderten Resultaten führen.
+
 Als erstes stellte sich die Frage, ob precision, recall, oder ein kombinierter F1-Score als performance Metrik gewählt werden sollte. Precision ist umgekehrt proportional zu false positive, recall zu false negative Voraussagen. Da es in diesem Fall wichtiger ist, die gemachten Empfehlungen korrekt vorauszusagen, wurde Precision als Performance Metrik definiert. Als zweite Wahl würden wir auf den F1-Score zurückggreifen. Dieser setzt sich aus der Kombination beider Petriken precision und recall zusammen.
 
 Der Parameter goodRating stellt die binäre Grenze dar, bei welcher ein rating als "positiv" bezeichnet werden kann. Wird der Wert höher gesetzt, sinkt die precision und der recall steigt. In dieser Modelloptimierung wurde definiert, dass alle Ratings ab 3 als positiv klassiert werden sollten.
@@ -749,17 +757,18 @@ Das SVD Modell wurde hier für verschiedene k's trainiert. Dabei wurde klar, das
 Das beste daraus resultierende Modell ist in dem Falle "popular items" mit n=10 Voraussagen.
 
 
-
 Das popular Modell besitzt keine Hyperparameter für die Optimierung.
 Deshalb wird hier SVD bezüglich Hyperparameter k und n im Detail optimiert.
 
 ```{r echo=FALSE, cache=FALSE, results=FALSE, comment=FALSE, warning=FALSE, message=FALSE, fig.width = 15, fig.height = 10}
-
-hyper_param_svd(seq(from=2, to=10, by=1))
-
+hyper_param_svd(seq(from=2, to=10, by=1), dense_reduction)
+```
+```{r echo=FALSE, cache=FALSE, results=FALSE, comment=FALSE, warning=FALSE, message=FALSE, fig.width = 15, fig.height = 10}
+hyper_param_svd(seq(from=2, to=10, by=1), dense_user_reduction)
 ```
 
-Für das Modell SVD ist die Precision am besten, wenn k=4 ist und n=10. 
+
+Für das Modell SVD ist die Precision am besten, wenn k=4 ist und n=10.
 Zudem wurde festgestellt, dass je nach Seed Position k=5 besser sein kann.
 Die precision des Modells mit optimierten Hyperparameter ist immernoch tiefer, als die des popular Modells.
 
@@ -802,7 +811,7 @@ Hier wird hier ein IBCF recommender gebaut, um die cosine similarity Matrix der 
 
 ```{r}
 k_value = dim(sample_sim_rating)[2]
-print(paste("K-Wert: ", k_value))
+#print(paste("K-Wert: ", k_value))
 
 start.time <- Sys.time()
 rec <- Recommender(sample_sim_rating, method = "IBCF", param=list(method="Cosine", k=k_value, normalize = NULL, na_as_zero = TRUE))
@@ -812,7 +821,7 @@ print(elapsed.time)
 
 similarity <- as.matrix(rec@model$sim)
 #image(similarity)
-plot_sim(similarity)
+plot_sim(similarity, "IBCF cosine similarity matrix")
 
 ```
 Es wird sichtbar, dass die Diagonalwerte eine andere Farbe aufweisen. Leider kann man die Similarities aufgrund der Menge von Datenpunkten nicht wirklich vergleichen. Werden die ersten Werte visualisiert, wird jedoch klar dass die Diagonaleinträge 0 anstatt 1 sind. Dies ist jedoch nicht weiter tragisch, da diese Daten keine Informationen tragen. Sie können deshalb ignoriert werden.
@@ -836,7 +845,7 @@ end.time <- Sys.time()
 elapsed.time <- round((end.time - start.time), 3)
 print(elapsed.time)
 
-plot_sim(cosine_sim_matrix)
+plot_sim(cosine_sim_matrix, "IBCF cosine similarity matrix")
 
 ```
 
@@ -865,19 +874,13 @@ Als nächstes wird die jaccard similarity berechnet. Dafür werden die Ratings z
 # binarize matrix and make split at a rating of 3
 sample_sim_bin <- as(binarize(as(sample_sim_rating, "realRatingMatrix"), minRating=3), "matrix") * 1
 
-# replace nas with 0 (no adjusted cosine similarity)
-#wide_matrix[is.na(wide_matrix)] <- 0
-
-# ibcf, because columns are taken here
-# row count
-
 start.time <- Sys.time()
 jac_own <- jaccard_sim2(t(sample_sim_bin), t(sample_sim_bin))
 end.time <- Sys.time()
 elapsed.time <- round((end.time - start.time), 3)
 print(elapsed.time)
 
-plot_sim(jac_own)
+plot_sim(jac_own, "IBCF jaccard similarity matrix")
 
 #dim(wide_matrix)
 
@@ -888,7 +891,7 @@ jac_own[1:3, 1:3]
 ```
 
 Auch bei der Implementierung der Jaccard Similarity ist dank Matriximplementation der Zeitaufwand relativ gering.
-Hier fällt jedoch auf, dass auf der Diagonalen Lücken bestehen.
+Hier fällt jedoch auf, dass auf der Diagonalen Lücken (0-Werte) anstatt 1er bestehen. Ein Beispiel wurde hier herausgesucht:
 
 
 ```{r}
@@ -902,7 +905,7 @@ jac_own[38:40, 38:40]
 print(paste(sum(sample_sim_bin[,44]), "people have rated <Homage (1995)> 3 or higher."))
 print(paste(sum(sample_sim_bin[,39]), "people have rated <Gordy (1995)> 3 or higher."))
 ```
-Bei Durchsuchung des Datensatzes ist auffallend, dass diese Filme nur nagative Bewertungen enthalten. Durch die Implementierung der Jaccard Similarity entsteht dadurch im Nenner eine 0, was zu einer jaccard similarity von NA führt.
+Bei Durchsuchung des Datensatzes ist auffallend, dass diese Filme nur binärisiert-nagative Bewertungen enthalten. Durch die Implementierung der Jaccard Similarity entsteht dadurch im Nenner eine 0, was zu einer jaccard similarity von NA führt.
 
 Als Nächstes wird die normierte Cosine Ähnlichkeitsmatrix berechnet.
 
@@ -925,16 +928,16 @@ end.time <- Sys.time()
 elapsed.time <- round((end.time - start.time), 3)
 print(elapsed.time)
 
-plot_sim(cosine_sim_norm)
+plot_sim(cosine_sim_norm, "IBCF cosine similarity matrix normiert")
 
 ```
 
 In dieser Darstellung ist die normierte cosine similarity dargestellt. Für die Normierung wurde min-max Normailisierung gewählt, mit dem Mittelwert der ratings pro Film als NA Ersatz. Dadurch entsteht wie erwartet grundsätzlich eine höhere similarity, wessen Werte sich zwischen 0 und 1 ansiedeln.
 
 ```{r fig.width = 15, fig.height = 5}
-p1 <- plot_sim(cosine_sim_matrix)
-p2 <- plot_sim(jac_own)
-p3 <- plot_sim(cosine_sim_norm)
+p1 <- plot_sim(cosine_sim_matrix, "IBCF cosine similarity matrix")
+p2 <- plot_sim(jac_own, "IBCF jaccard similarity matrix")
+p3 <- plot_sim(cosine_sim_norm, "IBCF cosine similarity matrix normiert")
 
 grid.arrange(p1, p2, p3, ncol = 3, nrow = 1)
 ```
@@ -943,13 +946,14 @@ Die unnormalisierten Cosine und Jaccard Ähnlichkeitsmatrizen sind sich sehr äh
 
 
 ```{r}
-print(jac_own[25:28, 25:27])
-print(sample_sim_wide[,'Designated Mourner, The (1997)'] %>% drop_na())
-print(sample_sim_wide[,'Dadetown (1995)'] %>% drop_na())
-```
-TODO: klarere darstellung evtl?
+#print(jac_own[25:28, 25:27])
+subset <- sample_sim_wide[, c('Designated Mourner, The (1997)', 'Dadetown (1995)')]
 
-Dies ist beispielsweise bei den Filmen 'Designated Mourner, The (1997)' und 'Dadetown (1995)' der Fall. Diese Filme wurde drei, bzw. ein Mal bewertet. Der Rest der Werte ist jeweils auf 0 gesetzt. Deshalb wird die Cosine Ähnlichkeit zwischen diesen Werten kaum eine Aussage treffen können. Diese Werte sind deshalb von niedriger Bedeutung.
+colSums(!is.na(subset))
+
+```
+
+Dies ist beispielsweise bei den Filmen 'Designated Mourner, The (1997)' und 'Dadetown (1995)' der Fall. Diese Filme wurde drei, bzw. ein Mal bewertet. Der Rest der Werte ist jeweils auf 0 gesetzt. Deshalb wird die Cosine Ähnlichkeit zwischen diesen Werten kaum eine aussagekräftige Aussage machen können. Diese Werte sind deshalb von niedriger Bedeutung.
 
 
 Die normalisierte Cosine Ähnlichkeitsmatrix ist etwas anders in der Struktur. Dadurch, dass die Mittelwerte der jeweiligen Filmbewertungen durch die fehlenden Daten ein hohes Gewicht auf die Daten haben, entstehen generell grössere Abstände zwischen den Bewertungen einzelner Filme. Diese werden sichtbar durch Streifen. Dadurch liegt ein stärkerer Fokus auf den Unterschieden der Filmbewertungen im Allgemeinen und weniger auf den Unterschieden einzelner Ratings.

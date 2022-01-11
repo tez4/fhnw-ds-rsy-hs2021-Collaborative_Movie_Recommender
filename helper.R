@@ -186,7 +186,7 @@ plot_most_occ_item <- function(topnlist_df, Subtitle) {
 
 # ------------------- Wahl des optimalen Recommenders ---------------------------
 
-evaluate_model <- function()
+evaluate_model <- function(data)
 {
   set.seed(123)
   # evaluation scheme with k=10 (10 fold cross validation) and a rating split of 5
@@ -195,7 +195,7 @@ evaluate_model <- function()
   good_rating <- 3
   
   #scheme
-  scheme <- evaluationScheme(train, method = "cross-validation", k = 10, given = given_n, goodRating = good_rating)
+  scheme <- evaluationScheme(data, method = "cross-validation", k = 10, given = given_n, goodRating = good_rating)
   
   algorithms <- list(
     "popular items" = list(name="POPULAR", param=NULL),
@@ -221,7 +221,7 @@ evaluate_model <- function()
   
   for (i in 1:length(ns)) 
   {
-    rec <- Recommender(train, method = "IBCF", param=list(method="Cosine", k = ns[i], normalize = 'center', na_as_zero = TRUE))
+    rec <- Recommender(data, method = "IBCF", param=list(method="Cosine", k = ns[i], normalize = 'center', na_as_zero = TRUE))
     #recom <- predict(rec, test, n=1)
     
     print(scheme)
@@ -262,7 +262,7 @@ evaluate_model <- function()
     )
 }
 
-hyper_param_svd <- function(seq)
+hyper_param_svd <- function(seq, data)
 {
   set.seed(123)
   
@@ -274,7 +274,7 @@ hyper_param_svd <- function(seq)
   good_rating <- 3
   
   #scheme
-  scheme <- evaluationScheme(train, method = "cross-validation", k = 10, given = given_n, goodRating = good_rating)
+  scheme <- evaluationScheme(data, method = "cross-validation", k = 10, given = given_n, goodRating = good_rating)
   
   algorithms <- list()
   for(i in seq)
@@ -417,7 +417,7 @@ jaccard_sim2 <- function(A, B)
   return (jac)
 }
 
-plot_sim <- function(A)
+plot_sim <- function(A, title)
 {
   rownames(A) <- c()
   colnames(A) <- c()
@@ -427,7 +427,7 @@ plot_sim <- function(A)
   #}
   #else
   #{
-  levelplot(A, xlab="items", ylab="items", main="IBCF similarity visualization", col.regions=colorRampPalette(c("white", "black")))
+  levelplot(A, xlab="items", ylab="items", main=title, col.regions=colorRampPalette(c("white", "black")))
   #}
 }
 
@@ -493,50 +493,51 @@ show_novelty <- function(listOfDifferentN) {
 }
 
 
-show_precision <- function(listOfDifferentN, ratingMatrix, threshold) {
-  
-  # normalize the rating matrix
-  ratingMatrix <- normalize(ratingMatrix, method="Z-score", row=TRUE)
-  
-  # create a training set and a test set with true positives for recall and precision
-  data <- as(ratingMatrix, "data.frame")
-  relevant <- data %>% group_by(user) %>% sample_n(30)
-  true_positives <- relevant %>% filter(rating >= threshold)
-  false_positives <- relevant %>% filter(rating < threshold)
-  
-  # remove testing observations from training set
-  train <- anti_join(data, relevant,by=c('user','item'))
-  train <- as(train, 'realRatingMatrix')
-  
-  # train model based on training set
-  rec <- Recommender(train, method = "IBCF", param=list(method="Cosine", k=30, normalize = NULL, na_as_zero = TRUE)) #normalize = 'center', 'Z-score'
-  
-  for (N in listOfDifferentN) {
-    
-    # predict top N movies
-    pre <- predict(rec, train, n = N)
-    reco_list <- as(pre, "list")
-    recommendations <- as.data.frame(reco_list)
-    
-    # find true positives and false positives for all users and add them up
-    true_total <- 0
-    false_total <- 0
-    for (i in as.list(unique(true_positives['user']))$user) {
-      our_user <- paste('X', i, sep = '')
-      recommendations['item'] <- recommendations[our_user]
-      
-      true_total <- true_total + nrow(inner_join(recommendations['item'], true_positives %>% filter(user == as.integer(i)), by = 'item'))
-      false_total <- false_total + nrow(inner_join(recommendations['item'], false_positives %>% filter(user == as.integer(i)), by = 'item'))
-    }
-    
-    # print Summary
-    print(paste('N =', N))
-    print(paste('Number of True Positives:',true_total))
-    print(paste('Number of False Positives:',false_total))
-    print(paste('Precision:',true_total / (true_total + false_total)))
-    print('')
-  }
-}
+# uncomment with: ctrl+shift+c
+# show_precision <- function(listOfDifferentN, ratingMatrix, threshold) {
+# 
+#   # normalize the rating matrix
+#   ratingMatrix <- normalize(ratingMatrix, method="Z-score", row=TRUE)
+# 
+#   # create a training set and a test set with true positives for recall and precision
+#   data <- as(ratingMatrix, "data.frame")
+#   relevant <- data %>% group_by(user) %>% sample_n(30)
+#   true_positives <- relevant %>% filter(rating >= threshold)
+#   false_positives <- relevant %>% filter(rating < threshold)
+# 
+#   # remove testing observations from training set
+#   train <- anti_join(data, relevant,by=c('user','item'))
+#   train <- as(train, 'realRatingMatrix')
+# 
+#   # train model based on training set
+#   rec <- Recommender(train, method = "IBCF", param=list(method="Cosine", k=30, normalize = NULL, na_as_zero = TRUE)) #normalize = 'center', 'Z-score'
+# 
+#   for (N in listOfDifferentN) {
+# 
+#     # predict top N movies
+#     pre <- predict(rec, train, n = N)
+#     reco_list <- as(pre, "list")
+#     recommendations <- as.data.frame(reco_list)
+# 
+#     # find true positives and false positives for all users and add them up
+#     true_total <- 0
+#     false_total <- 0
+#     for (i in as.list(unique(true_positives['user']))$user) {
+#       our_user <- paste('X', i, sep = '')
+#       recommendations['item'] <- recommendations[our_user]
+# 
+#       true_total <- true_total + nrow(inner_join(recommendations['item'], true_positives %>% filter(user == as.integer(i)), by = 'item'))
+#       false_total <- false_total + nrow(inner_join(recommendations['item'], false_positives %>% filter(user == as.integer(i)), by = 'item'))
+#     }
+# 
+#     # print Summary
+#     print(paste('N =', N))
+#     print(paste('Number of True Positives:',true_total))
+#     print(paste('Number of False Positives:',false_total))
+#     print(paste('Precision:',true_total / (true_total + false_total)))
+#     print('')
+#   }
+# }
 
 
 # -----------------------Implementierung Top-N Monitor----------------------------------

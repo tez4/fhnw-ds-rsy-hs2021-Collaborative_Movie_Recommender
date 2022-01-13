@@ -177,7 +177,89 @@ plot_most_occ_item <- function(topnlist_df, Subtitle) {
 
 # ------------------- Analyse Top-N-Listen - Ratings ---------------------------
 
-
+intersect_ibcf_ubcf <- function(dataset, datasetname) {
+  
+  #ibcf recommender with Cosine similarity
+  rec_ibcf_cos <- Recommender(train, method = "IBCF", param=list(method="Cosine", 
+                                                                 k=30, normalize = NULL, 
+                                                                 na_as_zero = TRUE))
+  topn_ibcf_cos <- predict(rec_ibcf_cos, test, n = 15)
+  topn_ibcf_cos_list <- as(topn_ibcf_cos, "list")
+  
+  #ibcf recommender with Jaccard similarity
+  rec_ibcf_jac <- Recommender(train, method = "IBCF", param=list(method="Jaccard", 
+                                                                 k=30, normalize = NULL, 
+                                                                 na_as_zero = TRUE))
+  topn_ibcf_jac <- predict(rec_ibcf_jac, test, n = 15)
+  topn_ibcf_jac_list <- as(topn_ibcf_jac, "list")
+  
+  #ubcf recommender with Cosine similarity
+  rec_ubcf_cos <- Recommender(train, method = "UBCF", param=list(method="Cosine", normalize = NULL))
+  topn_ubcf_cos <- predict(rec_ubcf_cos, test, n = 15)
+  topn_ubcf_cos_list <- as(topn_ubcf_cos, "list")
+  
+  #ubcf recommender with Jaccard similarity
+  rec_ubcf_jac <- Recommender(train, method = "UBCF", param=list(method="Jaccard", 
+                                                                 normalize = NULL))
+  topn_ubcf_jac <- predict(rec_ubcf_jac, test, n = 15)
+  topn_ubcf_jac_list <- as(topn_ubcf_jac, "list")
+  
+  comparison <- data.frame('comparison' = character(), 'intersection' = numeric(), 
+                           'dataset' = character())
+  colnames(comparison) <- c('comparison', 'intersection', 'dataset')
+  
+  e <- evaluationScheme(dataset, method="split", train=0.8, k=1, given=0)
+  train <- getData(e, "train")
+  test <- getData(e, 'unknown')
+  
+  #intersect of top 15 recommendations IBCF vs UBCF cosine similarity
+  comp_ord_cos<- 0
+  for (n in 1:length(topn_ibcf_cos_list)) {
+    intersection <- length(intersect(unlist(topn_ibcf_cos_list[n]), 
+                                     unlist(topn_ubcf_cos_list[n]))) / 15
+    comp_ord_cos <- comp_ord_cos + intersection
+  }
+  comp <- c('ibcf cos - ubcf cos', round(comp_ord_cos / length(topn_ibcf_cos_list), 2),
+            as.character(datasetname))
+  comparison[nrow(comparison) + 1,] = comp
+  
+  #intersect of top 15 recommendations IBCF vs UBCF Jaccard similarity
+  comp_bin_jac<- 0
+  for (n in 1:length(topn_ibcf_jac_list)) {
+    intersection <- length(intersect(unlist(topn_ibcf_jac_list[n]), 
+                                     unlist(topn_ubcf_jac_list[n]))) / 15
+    comp_bin_jac <- comp_bin_jac + intersection
+  }
+  comp <- c('ibcf cos - ubcf jac', round(comp_bin_jac / length(topn_ibcf_jac_list), 2),
+            as.character(datasetname))
+  comparison[nrow(comparison) + 1,] = comp
+  
+  #intersect of top 15 recommendations UBCF Cosine Similarity vs UBCF Jaccard similarity
+  comp_cos_jac<- 0
+  for (n in 1:length(topn_ubcf_jac_list)) {
+    intersection <- length(intersect(unlist(topn_ubcf_jac_list[n]), 
+                                     unlist(topn_ubcf_cos_list[n]))) / 15
+    comp_cos_jac <- comp_cos_jac + intersection
+  }
+  comp <- c('ubcf cos - ubcf jac', round(comp_cos_jac / length(topn_ubcf_jac_list), 2),
+            as.character(datasetname))
+  comparison[nrow(comparison) + 1,] = comp
+  
+  ggplot(comparison, aes(x = comparison, y = intersection)) +
+    geom_col(alpha = 1, fill = 'steelblue') +
+    #geom_text(aes(label=count), vjust=1.5, color = 'white') +
+    scale_y_discrete(expand = c(0,0)) +
+    labs(
+      title = paste("Anteil Überschneidung der Recommender", as.character(datasetname)),
+      # subtitle = paste("N = ", nrow(df3), " Filme"),
+      x = "verglichene Recommender", 
+      y = "Überschneidung in %"
+    ) +
+    theme_classic() +
+    theme(text = element_text(size = 12),
+          axis.text.x = element_text(angle = 60, hjust = 1)
+    )
+}
 
 # ------------------- Analyse Top-N-Listen - IBCF vs SVD ---------------------------
 

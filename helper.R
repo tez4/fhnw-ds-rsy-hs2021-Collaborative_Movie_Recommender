@@ -257,7 +257,7 @@ intersect_ibcf_ubcf <- function(dataset, datasetname) {
     ) +
     theme_classic() +
     theme(text = element_text(size = 12),
-          axis.text.x = element_text(angle = 60, hjust = 1)
+          #axis.text.x = element_text(angle = 60, hjust = 1)
     )
 }
 

@@ -129,7 +129,8 @@ df1a %>%
   geom_text(aes(label=round(count,2)), hjust = 1.3, color = 'white') +
   labs(
     title = "Meist bewertete Filme",
-    y = element_blank(),    x = "Anzahl Bewertungen"
+    y = element_blank(),
+    x = "Anzahl Bewertungen"
   ) +
   theme_classic() +
   theme(axis.text.x = element_blank(),
@@ -157,7 +158,8 @@ df1b%>%
   geom_text(aes(label=count,2), hjust = 1.3, color = 'white') +
   labs(
     title = "Meist bewertete Genres",
-    y = element_blank(),    x = "Anzahl Bewertungen"
+    y = element_blank(),
+    x = "Anzahl Bewertungen"
   ) +
   theme_classic() +
   theme(axis.text.x = element_blank(),
@@ -375,7 +377,7 @@ Viele User haben jedoch nur einen kleinen Teil der Filme bewertet. Bei den Filme
 
 ```{r}
 sparcity <- sum(is.na(movies_wider[,-1])) / prod(dim(movies_wider))
-print(paste('Die Sparcity im Datensatz ist:',sparcity))
+print(paste('Die Sparcity im Datensatz ist:',round(sparcity,3)))
 ```
 Die Sparcity ist ungefähr 0.936. Dies bedeutet, dass ungefähr 6.4% der Daten Non-NA-Values sind. Somit hat der Durchschnittliche User 6.4% der verfügbaren Filme bewertet. Die Matrix ist mit einer Sparcity von ca. 0.936 sehr sparce. Dies haben wir ungefähr so erwartet, da es sehr unwahrscheinlich ist, dass ein Film von allen Nutzern bewertet wird oder, dass ein Nutzer alle Filme anschaut und auch bewertet.
 
@@ -437,7 +439,7 @@ Auf dieser Grafik ist die Veränderung der Verteilung der Bewertungen für die v
 ***
 ## Analyse Ähnlichkeitsmatrix
 #### 1. Zerlege den reduzierten MovieLense Datensatz in ein disjunktes Trainings- und Testdatenset im Verhältnis 4:1
-```{r}
+```{r echo=FALSE, cache=FALSE, results=FALSE, comment=FALSE, warning=FALSE}
 #both <- split_dataset(ratingMatrix, 0.8)
 #train <- both[[1]]
 #test <- both[[2]]
@@ -452,7 +454,7 @@ e <- evaluationScheme(dense_reduction, method="split", train=0.8, k=1, given=0)
 train <- getData(e, "train")
 test <- getData(e, 'unknown')
 ```
-TODO: ignore warning + evtl. löschen?
+Hier zerlegen wir unser Datensatz mithilfe von `evaluationScheme` in einen Trainings- und Testdatensatz. Der Trainingsdatensatz beinhaltet dabei 80% der Daten.
 
 ***
 #### 2. Trainiere ein IBCF Modell mit 30 Nachbarn und Cosine Similarity
@@ -462,6 +464,8 @@ rec <- Recommender(train, method = "IBCF", param=list(method="Cosine", k=30, nor
 # predict top 10 movies for 100 users
 pre <- predict(rec, test, n = 10)
 ```
+Hier trainieren wir ein IBCF Modell mit 30 Nachbaren und Cosine Similarity. Normalize wenden wir dabei nicht an. Jedoch imputieren wir hier Nullen für NA's.
+
 ***
 #### 3. Bestimme die Verteilung der Filme, welche bei IBCF für paarweise Ähnlichkeitsvergleiche verwendet werden
 ```{r}
@@ -543,8 +547,8 @@ ggplot(data1, aes(x = mean_rating, fill = category)) +
 Hier werden die durchschnittlichen Bewertungen der Filme welche am häufigsten in der Ähnlichkeitsmatrix auftauhen mit den restlichen filmen verglichen. Auch hier fällt erneut auf, dass die häufigsten Filme allgemein sehr gut bewertet wurden.
 
 ***
-##Analyse Top-N Listen - IBCF vs. UBCF
-####1.Berechne Top-15 Empfehlungen für Testkunden mit IBCF und UBCF
+## Analyse Top-N Listen - IBCF vs. UBCF
+#### 1.Berechne Top-15 Empfehlungen für Testkunden mit IBCF und UBCF
 ```{r}
 rec_ibcf <- Recommender(train, method = "IBCF", param=list(method="Cosine", k=30, normalize = NULL, na_as_zero = TRUE))
 topn_ibcf <- predict(rec_ibcf, test, n = 15)
@@ -556,9 +560,10 @@ topn_ubcf <- predict(rec_ubcf, test, n = 15)
 topn_ubcf_list <- as(topn_ubcf, "list")
 topn_ubcf_df <- as.data.frame(do.call(rbind, topn_ubcf_list))
 ```
+Hier erstellen wir je ein Dataframe aus der Top-N Liste von einem IBCF- und einem UBCF-Recommender.
 
 ***
-####2.Vergleiche die Top-15 Empfehlungen und deren Verteilung und diskutiere Gemeinsamkeiten und Unterschiede zwischen IBCF und UBCF für alle Testkunden.
+#### 2.Vergleiche die Top-15 Empfehlungen und deren Verteilung und diskutiere Gemeinsamkeiten und Unterschiede zwischen IBCF und UBCF für alle Testkunden.
 ```{r fig.width = 15, fig.height = 6}
 #compare most occurring items
 
@@ -615,7 +620,7 @@ hier ist die Übrschneidung der beiden Recommender (IBCF & UBCF) auf alle User z
 ## Analyse Top-N Listen - Ratings
 #### Vergleiche den Anteil übereinstimmender Empfehlungen der Top-15 Liste für IBCF vs UBCF, beide mit ordinalem Rating und Cosine Similarity für alle Testkunden
 
-```{r fig.width = 15, fig.height = 12}
+```{r fig.width = 15, fig.height = 12, warning=FALSE}
 datasets = c(dense_reduction, dense_user_reduction, random_reduction)
 datasetnames = c('dense_reduction', 'dense_user_reduction', 'random_reduction')
 
@@ -631,13 +636,12 @@ Zudem ist klar zu erkennen, dass UBCF mit Jaccard similarity verglichen mit UBCF
 ***
 ##Analyse Top-N Listen - IBCF vs SVD
 ####1.Vergleiche wie sich der Anteil übereinstimmender Empfehlungen der Top-15 Liste für IBCF vs verschiedene SVD Modelle verändert, wenn die Anzahl der Singulärwerte für SVD von 10 auf 20, 30, 40, 50 verändert wird
-```{r}
+```{r warning=FALSE, fig.width = 7.5, fig.height = 5}
 #dense_reduction, dense_user_reduction, random_reduction
 
 datasets = c(dense_reduction, dense_user_reduction, random_reduction)
 datasetnames = c('dense_reduction', 'dense_user_reduction', 'random_reduction')
 k = c(10, 20, 30, 40, 50)
-dense_reduction
 
 output <- data.frame('comparison' = character(), 'intersection' = numeric(), 'dataset' = character())
 colnames(output) <- c('comparison', 'intersection', 'dataset')
@@ -662,8 +666,6 @@ for (d in 1:length(datasets)){
     }
 }
 
-output
-
 ggplot(output, aes(x = comparison, y = intersection, fill = dataset)) +
   geom_col(alpha = 1, position = position_dodge()) +
   #geom_text(aes(label=count), vjust=1.5, color = 'white') +
@@ -671,12 +673,14 @@ ggplot(output, aes(x = comparison, y = intersection, fill = dataset)) +
   labs(
     title = "Überschneidung der Vorschläge SVD und IBCF Recommender",
     # subtitle = paste("N = ", nrow(df3), " Filme"),
-    x = "verglichene Recommender", 
-    y = "Anteil Überschneidung in %"
+    x = element_blank(),
+    y = "Anteil Überschneidung in %",
+    fill = element_blank()
   ) +
   theme_classic() +
   theme(text = element_text(size = 12),
-        axis.text.x = element_text(angle = 60, hjust = 1)
+        # axis.text.x = element_text(angle = 60, hjust = 1),
+        legend.position = 'bottom'
   )
 ```
 Auch hier werden die vorgeschlagenen Items von verschiedenen Recommendern verglichen. Diesmal SVD Recommender mit verschiedenen Singulärvektoren und IBCF. AUch dies wird wieder mit den verschiedenen Datenreduktionen verglichen.

@@ -250,10 +250,10 @@ intersect_ibcf_ubcf <- function(dataset, datasetname) {
     #geom_text(aes(label=count), vjust=1.5, color = 'white') +
     scale_y_discrete(expand = c(0,0)) +
     labs(
-      title = paste("Anteil Überschneidung der Recommender", as.character(datasetname)),
+      title = paste("Anteil Ueberschneidung der Recommender", as.character(datasetname)),
       # subtitle = paste("N = ", nrow(df3), " Filme"),
       x = "verglichene Recommender", 
-      y = "Überschneidung in %"
+      y = "Ueberschneidungsanteil"
     ) +
     theme_classic() +
     theme(text = element_text(size = 12),
@@ -268,7 +268,7 @@ intersect_ibcf_ubcf <- function(dataset, datasetname) {
 
 # ------------------- Wahl des optimalen Recommenders ---------------------------
 
-evaluate_model <- function(data)
+evaluate_model <- function(data, sub)
 {
   set.seed(123)
   # evaluation scheme with k=10 (10 fold cross validation) and a rating split of 5
@@ -306,7 +306,7 @@ evaluate_model <- function(data)
     rec <- Recommender(data, method = "IBCF", param=list(method="Cosine", k = ns[i], normalize = 'center', na_as_zero = TRUE))
     #recom <- predict(rec, test, n=1)
     
-    print(scheme)
+    # print(scheme)
     break
   }
   
@@ -339,12 +339,13 @@ evaluate_model <- function(data)
     geom_text(aes(label=n), vjust=-.2, hjust=-.0, show.legend = FALSE) +
     labs(
       title = paste0("Precision vs Recall, goodRating=", good_rating),
+      subtitle = sub,
       y = "Precision",
       x = "Recall"
     )
 }
 
-hyper_param_svd <- function(seq, data)
+hyper_param_svd <- function(seq, data, sub)
 {
   set.seed(123)
   
@@ -401,6 +402,7 @@ hyper_param_svd <- function(seq, data)
     geom_text(aes(label=n), vjust=-.0, hjust=-.2, show.legend = FALSE) +
     labs(
       title = paste0("Precision vs Recall, goodRating=", good_rating),
+      subtitle = sub,     
       y = "Precision",
       x = "Recall"
     )
@@ -517,13 +519,13 @@ plot_sim <- function(A, title)
 # ------------------- Implementierung Top-N Metriken ---------------------------
 
 
-show_coverage <- function(listOfDifferentN, recommender) {
+show_coverage <- function(listOfDifferentN, recommender, matrix) {
   
   listOfCoverages <- vector()
   for (N in listOfDifferentN) {
     
     # predict top N movies
-    pre <- predict(rec, train, n = N)
+    pre <- predict(recommender, matrix, n = N)
     reco_list <- as(pre, "list")
     recommendations <- as.data.frame(reco_list)
     all_recommendations <- list()
@@ -540,9 +542,8 @@ show_coverage <- function(listOfDifferentN, recommender) {
 }
 
 
-show_novelty <- function(listOfDifferentN) {
+show_novelty <- function(listOfDifferentN, recommender, matrix) {
   # create a data set wit calculated popularity for every movie
-  # TODO: Put popularity calculation into separate function
   popularity <- as(MovieLense, "data.frame")
   popularity <- popularity %>%
     group_by(item) %>% 
@@ -552,7 +553,7 @@ show_novelty <- function(listOfDifferentN) {
   listOfNovelties <- vector()
   for (N in listOfDifferentN) {
     # get top-N-list for a certain N
-    pre <- predict(rec, train, n = N)
+    pre <- predict(recommender, matrix, n = N)
     reco_list <- as(pre, "list")
     # This data frame has: Rows = N Movies, Columns = Users
     recommendations <- as.data.frame(reco_list)
@@ -572,6 +573,26 @@ show_novelty <- function(listOfDifferentN) {
     listOfNovelties <- c(listOfNovelties, 0 - mean(total_novelty))
   }
   return (data.frame(N = listOfDifferentN, novelty = listOfNovelties))
+}
+
+
+coverage_novelty <- function(matrix) {
+  rec <- Recommender(matrix, method = "IBCF", param=list(method="Cosine", k=30, normalize = NULL, na_as_zero = TRUE)) #normalize = 'center', 'Z-score'
+  
+  df_coverage <- show_coverage(c(5,10,15,20,25,30), rec, matrix)
+  df_novelty <- show_novelty(c(5,10,15,20,25,30), rec, matrix)
+  
+  df_combined <- inner_join(df_coverage, df_novelty, by = 'N')
+  
+  ggplot(data=df_combined, aes(x=coverage, y=novelty, group=1)) +
+    geom_line() +
+    geom_text(aes(label=N), vjust=-.25, hjust=-.05, show.legend = FALSE) +
+    labs(
+      title = "Coverage gegenueber Novelty fuer verschiedene N",
+      y = "Novelty",
+      x = "Coverage"
+    ) +
+    theme(text = element_text(size = 12))
 }
 
 

@@ -302,7 +302,7 @@ ggplot(movies_span  %>% group_by(span) %>% summarise(count = n()), aes(x=span, y
   geom_text(aes(label=round(count,2)), vjust = -0.7, color = 'black') +
   labs(
     title = "Spannweite Kundenratings",
-    subtitle = "",
+    subtitle = paste("N = 943 User"),
     x = "Spannweite", 
     y = "Anzahl User"
   )+
@@ -376,10 +376,10 @@ In dieser Grafik werden die Bewertungen von Usern (Row) den Filmen (Column) gege
 Viele User haben jedoch nur einen kleinen Teil der Filme bewertet. Bei den Filmen ist eine ähnliche Tendenz wahrzunehmen.
 
 ```{r}
-sparcity <- sum(is.na(movies_wider[,-1])) / prod(dim(movies_wider))
-print(paste('Die Sparcity im Datensatz ist:',round(sparcity,3)))
+Sparsity <- sum(is.na(movies_wider[,-1])) / prod(dim(movies_wider))
+print(paste('Die Sparsity im Datensatz ist:',round(Sparsity,3)))
 ```
-Die Sparcity ist ungefähr 0.936. Dies bedeutet, dass ungefähr 6.4% der Daten Non-NA-Values sind. Somit hat der Durchschnittliche User 6.4% der verfügbaren Filme bewertet. Die Matrix ist mit einer Sparcity von ca. 0.936 sehr sparce. Dies haben wir ungefähr so erwartet, da es sehr unwahrscheinlich ist, dass ein Film von allen Nutzern bewertet wird oder, dass ein Nutzer alle Filme anschaut und auch bewertet.
+Die Sparsity ist ungefähr 0.936. Dies bedeutet, dass ungefähr 6.4% der Daten Non-NA-Values sind. Somit hat der Durchschnittliche User 6.4% der verfügbaren Filme bewertet. Die Matrix ist mit einer Sparsity von ca. 0.936 sehr sparse. Dies haben wir ungefähr so erwartet, da es sehr unwahrscheinlich ist, dass ein Film von allen Nutzern bewertet wird oder, dass ein Nutzer alle Filme anschaut und auch bewertet.
 
 ***
 ## Datenreduktion
@@ -406,7 +406,7 @@ ggplot(df_sparsity, aes(x=matrix, y = sparsity)) +
   labs(
     title = "Sparsity der verschiedenen Datenreduktionen",
     x = element_blank(), 
-    y = "Sparcity in Prozent",
+    y = "Sparsity in Prozent",
     fill = element_blank()
   ) +
   theme_classic() + 
@@ -415,7 +415,7 @@ ggplot(df_sparsity, aes(x=matrix, y = sparsity)) +
     legend.position = 'bottom'
   )
 ```
-Wir haben drei verschiedene Datenreduktionen vorgenommen. Das Ziel dieser Datenreduktionen war es den Datensatz auf verschiedene Weisen auf 400 Kunden und 700 Filme zu reduzieren. Die `random_reduction` reduziert den Datensatz auf eine zufällige Weise. Die 400 Kunden und die 700 Filme werden dabei also rein zufällig ausgewählt. Dabei bleibt die Sparcity praktisch unverändert. Sie sinkt von 93.67% auf 92.75%. Die `dense_user_reduction` reduziert die Filme immernoch zufällig, jedoch werden hier die 400 Kunden mit den meisten Bewertungen genutzt. Für diese Datenreduktion sinkt die Sparsity von 93.67% auf 88.18%. Die `dense_reduction` nimmt die 400 Kunden mit den meisten Bewertungen und die 700 Meistbewerteten Filme. Dies senkt die Sparcity von 93.67% auf 75.80%.
+Wir haben drei verschiedene Datenreduktionen vorgenommen. Das Ziel dieser Datenreduktionen war es den Datensatz auf verschiedene Weisen auf 400 Kunden und 700 Filme zu reduzieren. Die `random_reduction` reduziert den Datensatz auf eine zufällige Weise. Die 400 Kunden und die 700 Filme werden dabei also rein zufällig ausgewählt. Dabei bleibt die Sparsity praktisch unverändert. Sie sinkt von 93.67% auf 92.75%. Die `dense_user_reduction` reduziert die Filme immernoch zufällig, jedoch werden hier die 400 Kunden mit den meisten Bewertungen genutzt. Für diese Datenreduktion sinkt die Sparsity von 93.67% auf 88.18%. Die `dense_reduction` nimmt die 400 Kunden mit den meisten Bewertungen und die 700 Meistbewerteten Filme. Dies senkt die Sparsity von 93.67% auf 75.80%.
 
 ```{r fig.width = 20, fig.height = 5}
 p1 <- image(dense_reduction, main = "Raw Ratings for Dense Reduction")
@@ -424,7 +424,7 @@ p3 <- image(random_reduction, main = "Raw Ratings for Random Reduction")
 
 grid.arrange(p1, p2, p3, ncol = 3, nrow = 1)
 ```
-Hier Kann man noch die verschiedenen Matrizen der drei Datenreduktionen sehen. Es fällt auch hier klar auf, dass die Density der `dense_reduction` am grössten ist, die Matrix also klar am wenigsten Sparce ist. Auch die `dense_user_reduction` hat hier um einiges mehr gefüllte Zellen als die Matrix der `random_reduction`.
+Hier Kann man noch die verschiedenen Matrizen der drei Datenreduktionen sehen. Es fällt auch hier klar auf, dass die Density der `dense_reduction` am grössten ist, die Matrix also klar am wenigsten sparse ist. Auch die `dense_user_reduction` hat hier um einiges mehr gefüllte Zellen als die Matrix der `random_reduction`.
 
 ```{r fig.width = 15, fig.height = 11}
 p1 <- show_change_of_rating_distribution(MovieLense, dense_reduction, 'Für dense_reduction, N alte Matrix = 1664 Filme, N neue Matrix = 700 Filme')
@@ -544,7 +544,7 @@ ggplot(data1, aes(x = mean_rating, fill = category)) +
     legend.position = c(.14, .93)
   )
 ```
-Hier werden die durchschnittlichen Bewertungen der Filme welche am häufigsten in der Ähnlichkeitsmatrix auftauhen mit den restlichen filmen verglichen. Auch hier fällt erneut auf, dass die häufigsten Filme allgemein sehr gut bewertet wurden.
+Hier werden die durchschnittlichen Bewertungen der Filme, welche am häufigsten in der Ähnlichkeitsmatrix auftauchen mit den restlichen Filmen verglichen. Auch hier fällt erneut auf, dass die häufigsten Filme allgemein sehr gut bewertet wurden.
 
 ***
 ## Analyse Top-N Listen - IBCF vs. UBCF
@@ -607,7 +607,7 @@ ggplot(comp_ibcf_ubcf, aes(x = intersect, y = count)) +
   labs(
     title = "Verteilung der überschneidung der empfohlenen Filme",
     # subtitle = paste("N = ", nrow(df3), " Filme"),
-    x = "Überschneidung in %", 
+    x = "Überschneidungsanteil", 
     y = "Häufigkeit"
   ) +
   theme_classic() +
@@ -634,8 +634,8 @@ Hier wurden für die drei Datenreduktionen jeweils IBCF mit UBCF verglichen, mit
 Zudem ist klar zu erkennen, dass UBCF mit Jaccard similarity verglichen mit UBCF mit Cosine Similarity die grösste übereinstimmung hat. Allerdings liegt auch diese Übereinstimmung nur bei ca. 12%. Sibald aber ein IBCF mit einem UBCF verglichen wird ist die Überinstimmung der vorgeschlagenen Items noch kleiner.
 
 ***
-##Analyse Top-N Listen - IBCF vs SVD
-####1.Vergleiche wie sich der Anteil übereinstimmender Empfehlungen der Top-15 Liste für IBCF vs verschiedene SVD Modelle verändert, wenn die Anzahl der Singulärwerte für SVD von 10 auf 20, 30, 40, 50 verändert wird
+## Analyse Top-N Listen - IBCF vs SVD
+#### 1.Vergleiche wie sich der Anteil übereinstimmender Empfehlungen der Top-15 Liste für IBCF vs verschiedene SVD Modelle verändert, wenn die Anzahl der Singulärwerte für SVD von 10 auf 20, 30, 40, 50 verändert wird
 ```{r warning=FALSE, fig.width = 7.5, fig.height = 5}
 #dense_reduction, dense_user_reduction, random_reduction
 
@@ -674,7 +674,7 @@ ggplot(output, aes(x = comparison, y = intersection, fill = dataset)) +
     title = "Überschneidung der Vorschläge SVD und IBCF Recommender",
     # subtitle = paste("N = ", nrow(df3), " Filme"),
     x = element_blank(),
-    y = "Anteil Überschneidung in %",
+    y = "Überschneidungsanteil",
     fill = element_blank()
   ) +
   theme_classic() +
@@ -683,21 +683,20 @@ ggplot(output, aes(x = comparison, y = intersection, fill = dataset)) +
         legend.position = 'bottom'
   )
 ```
-Auch hier werden die vorgeschlagenen Items von verschiedenen Recommendern verglichen. Diesmal SVD Recommender mit verschiedenen Singulärvektoren und IBCF. AUch dies wird wieder mit den verschiedenen Datenreduktionen verglichen.
+Auch hier werden die vorgeschlagenen Items von verschiedenen Recommendern verglichen. Diesmal SVD Recommender mit verschiedenen Singulärwerte und IBCF. AUch dies wird wieder mit den verschiedenen Datenreduktionen verglichen.
 Hier zu sehen ist klar, dass die Datenreduktion durchaus einfluss auf die Überschneidung der vorgeschlagenen Items hat. Jedoch wenn die skala bei Anteil Überschneidung betrachtet wird, ist zu erkennen, dass dieser Einfluss in einem sehr kleinen bereich liegt. zu erkennen ist, dass IBCF mit SVD verglichen sehr kleine Überschneidungen produziert.
-Wenn man die dense_reduction und die random_reduction betrachtet ist eine tendenz zu erkennen, dass bei einer steigerung der Anzahl Singulärvektoren auch eine grössere Überschneidung erzielt wird.
+Wenn man die dense_reduction und die random_reduction betrachtet ist eine tendenz zu erkennen, dass bei einer steigerung der Anzahl Singulärwerte auch eine grössere Überschneidung erzielt wird.
 
 ***
 ## Wahl des optimalen Recommenders
-#### Verwende für die Evaluierung 10-fache Kreuzvalidierung,
 
 ```{r echo=FALSE, cache=FALSE, results=FALSE, comment=FALSE, warning=FALSE, message=FALSE, fig.width = 15, fig.height = 10}
-evaluate_model(dense_reduction)
+evaluate_model(dense_reduction, 'Mit Dense Reduction der Daten')
 ```
 
 
 ```{r echo=FALSE, cache=FALSE, results=FALSE, comment=FALSE, warning=FALSE, message=FALSE, fig.width = 15, fig.height = 10}
-evaluate_model(dense_user_reduction)
+evaluate_model(dense_user_reduction, 'Mit Dense User Reduction der Daten')
 ```
 
 Für die Evaluierung und Optimierung wurden die dense reduzierten Datensätze verwendet. Dies, da alle items in der Matrix mehr Einträge haben müssen als im given_n spezifiziert. Die Reduzierung dieses Parameters würde wiederum zu veränderten Resultaten führen.
@@ -719,10 +718,10 @@ Das popular Modell besitzt keine Hyperparameter für die Optimierung.
 Deshalb wird hier SVD bezüglich Hyperparameter k und n im Detail optimiert.
 
 ```{r echo=FALSE, cache=FALSE, results=FALSE, comment=FALSE, warning=FALSE, message=FALSE, fig.width = 15, fig.height = 10}
-hyper_param_svd(seq(from=2, to=10, by=1), dense_reduction)
+hyper_param_svd(seq(from=2, to=10, by=1), dense_reduction, 'Mit Dense User Reduction der Daten')
 ```
 ```{r echo=FALSE, cache=FALSE, results=FALSE, comment=FALSE, warning=FALSE, message=FALSE, fig.width = 15, fig.height = 10}
-hyper_param_svd(seq(from=2, to=10, by=1), dense_user_reduction)
+hyper_param_svd(seq(from=2, to=10, by=1), dense_user_reduction, 'Mit Dense User Reduction der Daten')
 ```
 
 
@@ -755,8 +754,6 @@ sample_sim_wide <- pivot_wider(
   values_from = rating,
   values_fill = NULL,
 )
-
-sample_sim_wide
 ```
 
 Hier wird ein IBCF recommender gebaut, um die Cosinesimilarity Matrix der Filme mithilfe von Recommenderlab zu erstellen. Dabei wurden folgende Parameter eingestellt:
@@ -785,7 +782,7 @@ plot_sim(similarity, "IBCF cosine similarity matrix")
 Es wird sichtbar, dass die Diagonalwerte eine andere Farbe aufweisen. Leider kann man die Similarities aufgrund der Menge von Datenpunkten nicht wirklich vergleichen. Werden die ersten Werte visualisiert, wird jedoch klar dass die Diagonaleinträge 0 anstatt 1 sind. Dies ist jedoch nicht weiter tragisch, da diese Daten keine Informationen tragen. Sie können deshalb ignoriert werden.
 
 ```{r}
-similarity[1:3, 1:3]
+similarity[1:2, 1:2]
 ```
 
 ```{r}
@@ -812,7 +809,7 @@ Wie man erkennen kann, sind die Ausprägungen der Similarities ähnlich zur Reco
 
 ```{r}
 diag(cosine_sim_matrix) <- 0
-cosine_sim_matrix[1:3, 1:3]
+cosine_sim_matrix[1:2, 1:2]
 ```
 Auch die ersten Zahlenwerte stimmen mit dem Print der Similarities von Recommenderlab überein.
 
@@ -845,7 +842,7 @@ plot_sim(jac_own, "IBCF jaccard similarity matrix")
 ```
 
 ```{r}
-jac_own[1:3, 1:3]
+jac_own[1:2, 1:2]
 ```
 
 Auch bei der Implementierung der Jaccard Similarity ist dank Matriximplementation der Zeitaufwand relativ gering.
@@ -876,7 +873,7 @@ for(col_i in 1:dim(sample_sim_wide_norm)[2])
   # replace nas with 0 (non adjusted cosine similarity)
   mean_col = mean(sample_sim_wide_norm[,col_i], na.rm=TRUE)
   #print(mean_col)
-  sample_sim_wide_norm[is.na(sample_sim_wide_norm[,col_i]), col_i] <- mean_col
+  sample_sim_wide_norm[is.na(sample_sim_wide_norm[,col_i]), col_i] <- 0
 
 }
 
@@ -889,8 +886,7 @@ print(elapsed.time)
 plot_sim(cosine_sim_norm, "IBCF cosine similarity matrix normiert")
 
 ```
-
-In dieser Darstellung ist die normierte Cosine Similarity dargestellt. Für die Normierung wurde min-max Normailisierung gewählt, mit dem Mittelwert der Ratings pro Film als NA Ersatz. Dadurch entsteht wie erwartet grundsätzlich eine höhere Similarity, wessen Werte sich zwischen 0 und 1 ansiedeln.
+In dieser Darstellung ist die normierte Cosine Similarity dargestellt. Für die Normierung wurde die Normailisierung von Recommenderlab gewählt, mit 0 als NA Ersatz. Dadurch entsteht wie erwartet grundsätzlich eine höhere Similarity, wessen Werte sich zwischen -1 und 1 ansiedeln.
 
 ```{r fig.width = 15, fig.height = 5}
 p1 <- plot_sim(cosine_sim_matrix, "IBCF cosine similarity matrix")
@@ -899,8 +895,7 @@ p3 <- plot_sim(cosine_sim_norm, "IBCF cosine similarity matrix normiert")
 
 grid.arrange(p1, p2, p3, ncol = 3, nrow = 1)
 ```
-
-Die unnormalisierten Cosine und Jaccard Ähnlichkeitsmatrizen sind sich sehr ähnlich. Sie weisen ähnliche strukturelle Eigenschaften auf. Die Jaccard Ähnlichkeitsmatrix enthält generell etwas tiefere Werte und ist deshalb heller. Es werden jedoch einzelne Punkte sichtbar, welche eine Ähnlichkeit von 1 aufweisen. 
+Die unnormalisierten Cosine und Jaccard Ähnlichkeitsmatrizen sind sich sehr ähnlich. Sie weisen ähnliche strukturelle Eigenschaften auf. Die Jaccard Ähnlichkeitsmatrix enthält generell etwas tiefere Werte und ist deshalb heller. Es werden jedoch einzelne Punkte sichtbar, welche eine Ähnlichkeit von 1 aufweisen. Bei der Ähnlichkeitsmatrix mit der normierten Cosine Similarity sind die Werte rund um Null verteilt, wobei auch negative Werte auftreten. Da die Null-Werte in der Mitte der Skala liegen ist die Ähnlichkeitsmatrix sehr grau.
 
 
 ```{r}
@@ -915,47 +910,32 @@ Dies ist beispielsweise bei den Filmen 'Designated Mourner, The (1997)' und 'Dad
 
 
 Die normalisierte Cosine Ähnlichkeitsmatrix ist etwas anders in der Struktur. Dadurch, dass die Mittelwerte der jeweiligen Filmbewertungen durch die fehlenden Daten ein hohes Gewicht auf die Daten haben, entstehen generell grössere Abstände zwischen den Bewertungen einzelner Filme. Diese werden sichtbar durch Streifen. Dadurch liegt ein stärkerer Fokus auf den Unterschieden der Filmbewertungen im Allgemeinen und weniger auf den Unterschieden einzelner Ratings.
-Dadurch verschwinden die Similarities einzelner Filme ein wenig und die Grafik ist schwerer zu lesen. Wäre die Matrix weniger sparce, würde diese Impuation nicht so stark ins Gewicht fallen und die Darstellung könnte besser abgelesen werden. In diesem Falle ist diese Grafik jedoch nicht gut geeignet.
+Dadurch verschwinden die Similarities einzelner Filme ein wenig und die Grafik ist schwerer zu lesen. Wäre die Matrix weniger sparse, würde diese Impuation nicht so stark ins Gewicht fallen und die Darstellung könnte besser abgelesen werden. In diesem Falle ist diese Grafik jedoch nicht gut geeignet.
 
 ***
 ## Implementierung Top-N Metriken
 #### Catalog coverage and System-level novelty
-```{r}
-rec <- Recommender(train, method = "IBCF", param=list(method="Cosine", k=30, normalize = NULL, na_as_zero = TRUE)) #normalize = 'center', 'Z-score'
 
-df_coverage <- show_coverage(c(5,10,15,20,25,30), rec)
-df_novelty <- show_novelty(c(5,10,15,20,25,30))
-
-df_combined <- inner_join(df_coverage, df_novelty, by = 'N')
-```
 Coverage: Summe aller unterschiedlichen Produkte, welche in den Top-N Listen aller Kund*Innen insgesamt auftauchen dividiert durch die Menge aller Produkte.
 Novelty: Mittel der Shannon Information der Popularität der Produkte in der Top-N Liste gemittelt über alle Kund*Innen. 
 
-```{r}
-ggplot(data=df_combined, aes(x=coverage, y=novelty, group=1)) +
-  geom_line() +
-  geom_text(aes(label=N), vjust=-.25, hjust=-.05, show.legend = FALSE) +
-  labs(
-    title = "Coverage gegenüber Novelty für verschiedene N",
-    y = "Novelty",
-    x = "Coverage"
-  ) +
-  theme(text = element_text(size = 12))
+```{r fig.width = 15, fig.height = 10}
+p1 <- coverage_novelty(dense_reduction)
+p2 <- coverage_novelty(dense_user_reduction)
+p3 <- coverage_novelty(random_reduction)
+
+grid.arrange(p1, p2, p3, ncol = 2, nrow = 2)
 ```
-TODO: das ganze im selben plot für verschiedene reduktionen darstellen + text + verschiedene Datenreduktionen
 
 ***
 ## Implementierung Top-N Monitor
 #### Fixiere 20 zufällig gewählte Testkunden für alle Modellvergleiche
 #### Bestimme den Anteil der Top-N Empfehlung nach Genres pro Kunde
 
-TODO: Hier auch 3 mal? - nein
-TODO: IBCF im titel erwähnen
-
-```{r fig.width = 7.5, fig.height = 5}
+```{r echo=FALSE, cache=FALSE, results=FALSE, comment=FALSE, warning=FALSE, message=FALSE, fig.width = 7.5, fig.height = 5}
 rec <- Recommender(train, method = "IBCF", param=list(method="Cosine", k=30, normalize = NULL, na_as_zero = TRUE))
 df_user_genres_top_n <- create_df_user_genres_top_n(rec, genres)
-show_genre_fraction_plot(df_user_genres_top_n, df_user_genres_top_n$count_top_n, "Anteil Genres in Top-N Empfehlung von 20 zuf. Kunden")
+show_genre_fraction_plot(df_user_genres_top_n, df_user_genres_top_n$count_top_n, "Anteil Genres in Top-N IBCF Empfehlung von 20 zuf. Kunden")
 ```
 Auf diesem Plot ist die Unterschiedliche Verteilung der Genres in den Top-N Empfehlungen für die verschiedenen Kunden zu sehen. Es fällt auf, dass bei diesem Recommender durchaus verschiedenartige Verteilungen bei den Genres für die verschiednen Nutzer auftreten.
 
@@ -975,7 +955,7 @@ df_user_genres_top_n <- create_df_user_genres_top_n(rec, genres)
 df_user_genres <- create_df_user_genres(df_user_genres_top_n, df_user_genres_best)
 show_cleveland_dot_plot(df_user_genres, 'IBCF Recommender mit Cosine Similarity')
 ```
-Auf diesem Plot ist ersichtlich welche Genres der IBCF Recommender mit Cosine Similarity für die 20 Kunden eher zu wenig oder zu viel empfiehlt. Beispielsweise Comedy macht bei den bestbewerteten Filmen im Durchschnitt ungefähr 12% aus, erscheint in den Top-N Empfehlungen jedoch zu etwa 21%.
+Da es schwer ist jeden Kunden einzeln zu visualisieren, haben wir hier mit den durchschnittlichen Genre-Anteilen der 20 Nutzer gearbeitet. Auf diesem Plot ist ersichtlich welche Genres der IBCF Recommender mit Cosine Similarity für die 20 Kunden eher zu wenig oder zu viel empfiehlt. Beispielsweise Comedy macht bei den bestbewerteten Filmen im Durchschnitt ungefähr 12% aus, erscheint in den Top-N Empfehlungen jedoch zu etwa 21%. Wir werden dies im Folgenden noch auf 3 weitere Recommender anwenden, um diese vergleichen zu können.
 
 ```{r fig.width = 7.5, fig.height = 6}
 rec <- Recommender(train, method = "UBCF", param=list(method="Jaccard", normalize = NULL))
@@ -997,8 +977,12 @@ df_user_genres_top_n <- create_df_user_genres_top_n(rec, genres)
 df_user_genres <- create_df_user_genres(df_user_genres_top_n, df_user_genres_best)
 show_cleveland_dot_plot(df_user_genres, 'SVD Recommender')
 ```
+Es fällt auf, dass die Genre-Anteile beim SVD-Recommender klar genauer übereinstimmen als beim IBCF Recommender. Jedoch ist es anhand dieser Grafiken sehr schwer den Unterschied der Genauigkeit abzuschätzen. Deshalb definieren wir hier eine Qualitätsmetrik, welche uns erlaubt die Genauigkeit der Genre-Anteile der Verschiedenen Recommender zu vergleichen.
 
 #### Definiere eine Qualitätsmetrik für Top-N Listen und teste sie
+Wir haben uns entschieden den mittleren absoluten prozentualen Fehler der Genre-Anteile in den Top-N Empfehlungen auszurechnen. Aber was genau bedeutet das? Nun, zuerst werden die Genre-Anteile der 20 Kunden wie bei den Plots oben zusammengefasst. Danach haben wir die durchschnittliche Abweichung zwischen den Top-N Empfehlungen mit dem jeweiligen Recommender verglichen. Dabei haben wir einen absoluten Wert genutzt, damit sich Fehler nicht ausgleichten. So konnte für jeden Recommender ein einziger Wert ausgerechnet werden. Die Formel dafür sieht dabei folgendermassen aus: 
+
+Mittlerer absoluter prozentualer Fehler = abs(Recommender@drama - Top-N@drama) + abs(Recommender@actions - Top-N@action) + ...
 ```{r}
 
 algorithms <- list(
@@ -1039,7 +1023,4 @@ ggplot(df_error, aes(x=description, y = error)) +
     legend.position = 'bottom'
   )
 ```
-abs(df1_drama - df2_drama) + abs(df1_actions - df2_action) + ...
-
-
-
+Hier sieht man wie zuvor schon vermutet, dass der SVD Recommender am besten abschliesst. Es ist hingegen unklar, warum der UBCF Recommender bei unserer Qualitätsmetrik so viel schlechter abschliesst. Unsere Qualitätsmetrik hat einige kleine Schwachstellen. Theoretisch kann der Recommender bei einigen Nutzern den Anteil stark überschätzen und für einige Nutzer genau das Gegenteil machen. Dies würde dann zu einem guten Score unserer Qualitätsmetrik führen. Auch wurde diese Qualitätsmetrik mit nur 20 Nutzern berechnet, was ebenfalls zu einem grossen Fehler bei der Einschätzung führen kann.
